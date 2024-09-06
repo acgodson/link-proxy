@@ -10,157 +10,161 @@ import {CustomRouter} from "../src/CustomRouter.sol";
 import "forge-std/console.sol";
 
 contract ProxyAIRouterTest is Test {
-    CCIPLocalSimulator public ccipLocalSimulator;
-    CustomRouter public sourceRouter;
-    Controller public targetController;
-    ControllerVault public targetVault;
+  CCIPLocalSimulator public ccipLocalSimulator;
+  CustomRouter public sourceRouter;
+  Controller public targetController;
+  ControllerVault public targetVault;
 
-    uint64 public destinationChainSelector;
-    BurnMintERC677Helper public ccipBnMToken;
-    IRouterClient public sourceRouterClient;
-    IRouterClient public targetRouterClient;
+  uint64 public destinationChainSelector;
+  BurnMintERC677Helper public ccipBnMToken;
+  IRouterClient public sourceRouterClient;
+  IRouterClient public targetRouterClient;
 
-    function setUp() public {
-        ccipLocalSimulator = new CCIPLocalSimulator();
+  function setUp() public {
+    ccipLocalSimulator = new CCIPLocalSimulator();
 
-        (
-            uint64 chainSelector,
-            IRouterClient _sourceRouterClient,
-            IRouterClient _targetRouterClient,
-            ,
-            ,
-            BurnMintERC677Helper ccipBnM,
+    (
+      uint64 chainSelector,
+      IRouterClient _sourceRouterClient,
+      IRouterClient _targetRouterClient,
+      ,
+      ,
+      BurnMintERC677Helper ccipBnM,
 
-        ) = ccipLocalSimulator.configuration();
+    ) = ccipLocalSimulator.configuration();
 
-        destinationChainSelector = chainSelector;
-        ccipBnMToken = ccipBnM;
-        sourceRouterClient = _sourceRouterClient;
-        targetRouterClient = _targetRouterClient;
+    destinationChainSelector = chainSelector;
+    ccipBnMToken = ccipBnM;
+    sourceRouterClient = _sourceRouterClient;
+    targetRouterClient = _targetRouterClient;
 
-        // Deploy source contracts
-        sourceRouter = new CustomRouter(
-            address(sourceRouterClient),
-            address(ccipBnMToken), //supposed to be Link Token
-            address(0), // Controller address (will be set later)
-            address(0), // ControllerVault address (will be set later)
-            address(ccipBnMToken),
-            destinationChainSelector
-        );
+    // Deploy source contracts
+    sourceRouter = new CustomRouter(
+      address(sourceRouterClient),
+      address(ccipBnMToken), //supposed to be Link Token
+      address(0), // Controller address (will be set later)
+      address(0), // ControllerVault address (will be set later)
+      address(ccipBnMToken),
+      destinationChainSelector
+    );
 
-        // Deploy target contracts
-        targetController = new Controller(address(targetRouterClient));
-        targetVault = new ControllerVault(address(targetRouterClient));
+    // Deploy target contracts
+    targetController = new Controller(address(targetRouterClient));
+    targetVault = new ControllerVault(address(targetRouterClient));
 
-        // Set up relationships
-        targetController.setVault(address(targetVault));
-        targetVault.setController(address(targetController));
-        sourceRouter.setController(address(targetController));
-        sourceRouter.setControllerVault(address(targetVault));
+    // Set up relationships
+    targetController.setVault(address(targetVault));
+    targetVault.setController(address(targetController));
+    sourceRouter.setController(address(targetController));
+    sourceRouter.setControllerVault(address(targetVault));
 
-        // Register the router as an authorized router in the controller
-        targetController.registerRouter(address(targetRouterClient));
+    // Register the router as an authorized router in the controller
+    targetController.registerRouter(address(targetRouterClient));
 
-        // Fund contracts
-        deal(address(sourceRouter), 100 ether);
-        deal(address(targetController), 100 ether);
-        deal(address(targetVault), 100 ether);
+    // Fund contracts
+    deal(address(sourceRouter), 100 ether);
+    deal(address(targetController), 100 ether);
+    deal(address(targetVault), 100 ether);
+  }
+
+  function test_crossChainKeyGenerationAndTokenTransfer() public {
+    // Prepare test data
+    bytes32 requestHash = keccak256("test request");
+    uint256 fixedNonce = 12345;
+    ProxyAIRouter.OperationType operationType = ProxyAIRouter.OperationType.Low;
+
+    // Use drip function to get tokens
+    uint256 targetAmount = 15 * 1e18;
+    uint256 amount = 0;
+    uint256 loopCount = 0;
+    while (amount < targetAmount && loopCount < 10) {
+      ccipBnMToken.drip(address(this));
+      amount = ccipBnMToken.balanceOf(address(this));
+      loopCount++;
     }
+    ccipBnMToken.approve(address(sourceRouter), amount);
 
-    function test_crossChainKeyGenerationAndTokenTransfer() public {
-        // Prepare test data
-        bytes32 requestHash = keccak256("test request");
-        uint256 fixedNonce = 12345;
-        ProxyAIRouter.OperationType operationType = ProxyAIRouter
-            .OperationType
-            .Low;
+    // Register this contract as an admin and deposit to fee tank
+    sourceRouter.registerAdmin(address(this));
+    sourceRouter.depositToFeeTank(amount);
 
-        // Use drip function to get tokens
-        uint256 targetAmount = 15 * 1e18;
-        uint256 amount = 0;
-        uint256 loopCount = 0;
-        while (amount < targetAmount && loopCount < 10) {
-            // Limit to 10 loops as a safeguard
-            ccipBnMToken.drip(address(this));
-            amount = ccipBnMToken.balanceOf(address(this));
-            loopCount++;
-        }
-        ccipBnMToken.approve(address(sourceRouter), amount);
+    // Ensure we have enough balance in the fee tank
+    uint256 feeTankBalance = sourceRouter.feeTank(address(this));
+    console.log("Fee tank balance:", feeTankBalance);
 
-        // Register this contract as an admin and deposit to fee tank
-        sourceRouter.registerAdmin(address(this));
-        sourceRouter.depositToFeeTank(amount);
+    // Generate key and send cross-chain message
+    uint256 messageCost = sourceRouter.quoteCrossChainMessage(
+      destinationChainSelector,
+      uint256(ProxyAIRouter.PayFeesIn.Native),
+      false, // No token transfer for key generation
+      0
+    );
 
-        // Ensure we have enough balance in the fee tank
-        uint256 feeTankBalance = sourceRouter.feeTank(address(this));
-        console.log("Fee tank balance:", feeTankBalance);
+    bytes32 requestMessageId = sourceRouter.generateKey{value: messageCost}(
+      requestHash,
+      fixedNonce,
+      uint256(operationType),
+      uint256(ProxyAIRouter.PayFeesIn.Native)
+    );
 
-        // Generate key and send cross-chain message
-        uint256 messageCost = sourceRouter.quoteCrossChainMessage(
-            destinationChainSelector,
-            uint256(ProxyAIRouter.PayFeesIn.Native),
-            false, // No token transfer for key generation
-            0
-        );
+    // Calculate expected idempotency key
+    bytes32 expectedIdempotencyKey = keccak256(
+      abi.encodePacked(address(this), requestHash, fixedNonce)
+    );
 
-        bytes32 requestMessageId = sourceRouter.generateKey{value: messageCost}(
-            requestHash,
-            fixedNonce,
-            uint256(operationType),
-            uint256(ProxyAIRouter.PayFeesIn.Native)
-        );
+    // Verify key generation on the target chain
+    (
+      address proxy,
+      Controller.OperationType predictedTokenUsage,
+      bool processed,
+      uint256 expirationTime
+    ) = targetController.getIdempotencyData(expectedIdempotencyKey);
 
-        // Calculate expected idempotency key
-        bytes32 expectedIdempotencyKey = keccak256(
-            abi.encodePacked(address(this), requestHash, fixedNonce)
-        );
+    assertEq(proxy, address(this), "Proxy address mismatch");
+    assertEq(uint(predictedTokenUsage), uint(operationType), "Operation type mismatch");
+    assertFalse(processed, "Key should not be processed yet");
+    assertTrue(expirationTime > block.timestamp, "Expiration time should be in the future");
 
-        // Verify key generation on the target chain
-        (
-            address proxy,
-            Controller.OperationType predictedTokenUsage,
-            bool processed,
-            uint256 expirationTime
-        ) = targetController.getIdempotencyData(expectedIdempotencyKey);
+    // Check balances before receipt submission
+    uint256 sourceRouterBalanceBefore = ccipBnMToken.balanceOf(address(sourceRouter));
+    uint256 targetVaultBalanceBefore = ccipBnMToken.balanceOf(address(targetVault));
+    uint256 targetControllerBalanceBefore = ccipBnMToken.balanceOf(address(targetController));
 
-        assertEq(proxy, address(this), "Proxy address mismatch");
-        assertEq(
-            uint(predictedTokenUsage),
-            uint(operationType),
-            "Operation type mismatch"
-        );
-        assertFalse(processed, "Key should not be processed yet");
-        assertTrue(
-            expirationTime > block.timestamp,
-            "Expiration time should be in the future"
-        );
+    console.log("Source Router balance before:", sourceRouterBalanceBefore);
+    console.log("Target Vault balance before:", targetVaultBalanceBefore);
+    console.log("Target Controller balance before:", targetControllerBalanceBefore);
 
-        // // Submit receipt
-        uint256 usedTokens = 2 * 1e18;
-        messageCost = sourceRouter.quoteCrossChainMessage(
-            destinationChainSelector,
-            uint256(ProxyAIRouter.PayFeesIn.Native),
-            true, // Include token transfer for receipt submission
-            usedTokens
-        );
+    // Submit receipt
+    uint256 usedTokens = 2 * 1e18;
+    messageCost = sourceRouter.quoteCrossChainMessage(
+      destinationChainSelector,
+      uint256(ProxyAIRouter.PayFeesIn.Native),
+      true, // Include token transfer for receipt submission
+      usedTokens
+    );
 
-        sourceRouter.submitReceipt{value: messageCost}(
-            requestMessageId,
-            expectedIdempotencyKey,
-            usedTokens,
-            uint256(ProxyAIRouter.PayFeesIn.Native)
-        );
+    sourceRouter.submitReceipt{value: messageCost}(
+      requestMessageId,
+      expectedIdempotencyKey,
+      usedTokens,
+      uint256(ProxyAIRouter.PayFeesIn.Native)
+    );
 
-        // // Verify token transfer and receipt processing
-        uint256 controllerBalance = ccipBnMToken.balanceOf(
-            address(targetController)
-        );
-        assertEq(controllerBalance, usedTokens, "Token transfer failed");
+    // Check balances after receipt submission
+    uint256 sourceRouterBalanceAfter = ccipBnMToken.balanceOf(address(sourceRouter));
+    uint256 targetVaultBalanceAfter = ccipBnMToken.balanceOf(address(targetVault));
+    uint256 targetControllerBalanceAfter = ccipBnMToken.balanceOf(address(targetController));
 
-        (, , bool isProcessed, ) = targetController.getIdempotencyData(
-            expectedIdempotencyKey
-        );
-        assertTrue(isProcessed, "Key should be marked as processed");
-        console.log("test Completed");
-    }
+    console.log("Source Router balance after:", sourceRouterBalanceAfter);
+    console.log("Target Vault balance after:", targetVaultBalanceAfter);
+    console.log("Target Controller balance after:", targetControllerBalanceAfter);
+
+    // // Verify token transfer and receipt processing
+    uint256 controllerBalance = ccipBnMToken.balanceOf(address(targetController));
+    assertEq(controllerBalance, usedTokens, "Token transfer failed");
+
+    (, , bool isProcessed, ) = targetController.getIdempotencyData(expectedIdempotencyKey);
+    assertTrue(isProcessed, "Key should be marked as processed");
+    console.log("test Completed");
+  }
 }

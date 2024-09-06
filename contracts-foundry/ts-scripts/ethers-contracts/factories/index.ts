@@ -4,4 +4,5 @@
 export * as controllerVaultSol from "./ControllerVault.sol";
 export { Controller__factory } from "./Controller__factory";
 export { CustomRouter__factory } from "./CustomRouter__factory";
+export { CustomRouterWithAttester__factory } from "./CustomRouterWithAttester__factory";
 export { Mock_Token__factory } from "./Mock_Token__factory";

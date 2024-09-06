@@ -9,14 +9,16 @@ import {
   requestTokensFromFaucet,
   areRelationshipsVerified,
   setRelationshipsVerified,
+  getAccount,
 } from "./helpers/utils";
 import { deployController, deployControllerVault, deployCustomRouter } from "./helpers/deploy";
 import {
   Controller,
   ControllerVault,
-  CustomRouter,
+  CustomRouterWithAttester as CustomRouter,
   Mock_Token__factory as ERC20__factory,
 } from "./ethers-contracts";
+import { SignProtocolClient, SpMode, EvmChains } from "@ethsign/sp-sdk";
 
 async function setupEnvironment(
   sourceNetwork: SupportedNetworks,
@@ -183,6 +185,33 @@ async function main() {
       targetNetwork
     );
     await performCrossChainOperation(sourceNetwork, targetNetwork, controller, customRouter);
+
+    // sign protocol
+    const account = getAccount(targetNetwork);
+    const client = new SignProtocolClient(SpMode.OnChain as any, {
+      account: account,
+      chain: EvmChains.baseSepolia,
+    });
+
+    const res = await client.createSchema({
+      name: "SDK Test",
+      data: [
+        { name: "messageID", type: "string" },
+        { name: "idempotencyKey", type: "string" },
+        { name: "amount", type: "uint256" },
+      ],
+    });
+    console.log("Schema Created", res.schemaId);
+
+    // Have an offchain monitor that checks if a schema with a messageID has appeared
+
+
+
+    // create an attestation with the SDK with the message
+
+
+
+
     console.log("Test completed successfully");
   } catch (error) {
     console.error("An error occurred during the test:");

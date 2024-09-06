@@ -7,6 +7,8 @@ import {
   CustomRouter__factory,
 } from "../ethers-contracts";
 import "dotenv/config";
+import { createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 
 export interface DeployedAddresses {
   controller: Record<number, string>;
@@ -23,6 +25,14 @@ export function getWallet(network: SupportedNetworks): ethers.Wallet {
     throw Error("No private key provided (use the PRIVATE_KEY environment variable)");
   }
   return new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+}
+
+export function getAccount(network: SupportedNetworks) {
+  if (!process.env.PRIVATE_KEY) {
+    throw Error("No private key provided (use the PRIVATE_KEY environment variable)");
+  }
+  const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`);
+  return account;
 }
 
 export async function loadDeployedAddresses(): Promise<DeployedAddresses> {

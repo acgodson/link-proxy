@@ -3,14 +3,16 @@
   "scripts": {
     "build": "npm install; forge build; npm run typechain",
     "test": "ts-node ./ts-scripts/main.ts",
-    "typechain": "typechain --target ethers-v5 --out-dir ts-scripts/ethers-contracts './out/{Controller,ControllerVault,CustomRouter,Mock_Token}.sol/*.json'"
+    "typechain": "typechain --target ethers-v5 --out-dir ts-scripts/ethers-contracts './out/{Controller,ControllerVault,CustomRouter,CustomRouterWithAttester,Mock_Token}.sol/*.json'"
   },
   "dependencies": {
+    "@ethsign/sp-sdk": "^0.7.3",
     "@typechain/ethers-v5": "^11.1.2",
     "dotenv": "^16.4.5",
     "ethers": "^*",
     "ts-node": "^10.9.1",
-    "typechain": "^8.2.0"
+    "typechain": "^8.2.0",
+    "viem": "^2.21.2"
   },
   "devDependencies": {
     "-": "^0.0.1",

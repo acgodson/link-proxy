@@ -1,0 +1,13 @@
+{
+  "controller": {
+    "5": "0x7290765c9A8c77BE83612aD7B6Bb9E17cc7186D8"
+  },
+  "controllerVault": {
+    "5": "0x1076E33AfCC14Dc8b8febFB894cb5089596f1A52"
+  },
+  "customRouter": {
+    "0": "0xc14a303387E7c1cbbDDe7d6bD2c120fca3bedBe8"
+  },
+  "erc20s": {},
+  "relationshipsVerified": true
+}

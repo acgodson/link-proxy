@@ -2,13 +2,15 @@
   "name": "link-proxy-contracts",
   "scripts": {
     "build": "npm install; forge build; npm run typechain",
-    "main": "ts-node ./ts-scripts/main.ts",
-    "typechain": "typechain --target ethers-v5 --out-dir ts-scripts/ethers-contracts './out/{Controller,ControllerVault,CustomRouter}.sol/*.json'"
+    "test": "ts-node ./ts-scripts/main.ts",
+    "typechain": "typechain --target ethers-v5 --out-dir ts-scripts/ethers-contracts './out/{Controller,ControllerVault,CustomRouter,Mock_Token}.sol/*.json'"
   },
   "dependencies": {
     "@typechain/ethers-v5": "^11.1.2",
     "dotenv": "^16.4.5",
-    "ethers": "^*"
+    "ethers": "^*",
+    "ts-node": "^10.9.1",
+    "typechain": "^8.2.0"
   },
   "devDependencies": {
     "-": "^0.0.1",

@@ -2,7 +2,6 @@ export enum SupportedNetworks {
   ETHEREUM_SEPOLIA,
   AVALANCHE_FUJI,
   ARBITRUM_SEPOLIA,
-  POLYGON_MUMBAI,
   BNB_CHAIN_TESTNET,
   OPTIMISM_SEPOLIA,
   BASE_SEPOLIA,
@@ -24,7 +23,7 @@ export const networkConfigs: { [key in SupportedNetworks]: NetworkConfig } = {
   [SupportedNetworks.ETHEREUM_SEPOLIA]: {
     description: "Ethereum Sepolia Testnet",
     chainSelector: "16015286601757825753",
-    rpc: "https://sepolia.infura.io/v3/YOUR_INFURA_PROJECT_ID", // Replace with your RPC
+    rpc: "https://sepolia.infura.io/v3/2SYhsNBoKVT0rc90QfGmgHe46j4",
     routerAddress: "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59",
     linkTokenAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
     wrappedNativeAddress: "0x097D90c9d3E0B50Ca60e1ae45F6A81010f9FB534",
@@ -51,16 +50,6 @@ export const networkConfigs: { [key in SupportedNetworks]: NetworkConfig } = {
     ccipBnMAddress: "0xA8C0c11bf64AF62CDCA6f93D3769B88BdD7cb93D",
     ccipLnMAddress: "0x139E99f0ab4084E14e6bb7DacA289a91a2d92927",
   },
-  [SupportedNetworks.POLYGON_MUMBAI]: {
-    description: "Polygon Mumbai Testnet",
-    chainSelector: "12532609583862916517",
-    rpc: "https://rpc-mumbai.maticvigil.com",
-    routerAddress: "0x1035CabC275068e0F4b745A29CEDf38E13aF41b1",
-    linkTokenAddress: "0x326C977E6efc84E512bB9C30f76E30c160eD06FB",
-    wrappedNativeAddress: "0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889",
-    ccipBnMAddress: "0xf1E3A5842EeEF51F2967b3F05D45DD4f4205FF40",
-    ccipLnMAddress: "0xc1c76a8c5bFDE1Be034bbcD930c668726E7C1987",
-  },
   [SupportedNetworks.BNB_CHAIN_TESTNET]: {
     description: "BNB Chain Testnet",
     chainSelector: "13264668187771770619",
@@ -75,7 +64,7 @@ export const networkConfigs: { [key in SupportedNetworks]: NetworkConfig } = {
   [SupportedNetworks.OPTIMISM_SEPOLIA]: {
     description: "Optimism Sepolia Testnet",
     chainSelector: "5224473277236331295",
-    rpc: "https://sepolia.optimism.io",
+    rpc: "https://optimism-sepolia.infura.io/v3/2SYhsNBoKVT0rc90QfGmgHe46j4",
     routerAddress: "0x114A20A10b43D4115e5aeef7345a1A71d2a60C57",
     linkTokenAddress: "0xE4aB69C077896252FAFBD49EFD26B5D171A32410",
     wrappedNativeAddress: "0x4200000000000000000000000000000000000006",

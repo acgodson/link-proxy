@@ -90,13 +90,14 @@ abstract contract ProxyAIRouter is OwnerIsCreator {
         uint256 fixedNonce,
         uint256 operationType,
         uint256 payFeesIn
-    ) external payable virtual {
-        _generateKey(
-            requestHash,
-            fixedNonce,
-            operationType,
-            PayFeesIn(payFeesIn)
-        );
+    ) external payable virtual returns (bytes32) {
+        return
+            _generateKey(
+                requestHash,
+                fixedNonce,
+                operationType,
+                PayFeesIn(payFeesIn)
+            );
     }
 
     function submitReceipt(
@@ -118,13 +119,14 @@ abstract contract ProxyAIRouter is OwnerIsCreator {
         uint256 fixedNonce,
         uint256 operationType,
         PayFeesIn payFeesIn
-    ) internal {
+    ) internal returns (bytes32) {
         bytes memory payload = abi.encode(
             FunctionType.GenerateKey,
             abi.encode(msg.sender, requestHash, operationType, fixedNonce)
         );
 
         uint256 maxFee = calculateMaxFee(OperationType(operationType));
+
         require(
             feeTank[msg.sender] >= maxFee,
             "Insufficient token for service payment"
@@ -168,6 +170,8 @@ abstract contract ProxyAIRouter is OwnerIsCreator {
         messageIdToTokenAmount[messageId] = maxFee;
 
         _onRequest(messageId, payFeesIn);
+
+        return messageId;
     }
 
     function _submitReceipt(
@@ -195,6 +199,7 @@ abstract contract ProxyAIRouter is OwnerIsCreator {
         bytes memory payload = abi.encode(
             address(this), // depositor router address
             requestMessageId,
+            idempotencyKey,
             address(token),
             usedTokens
         );
@@ -257,16 +262,32 @@ abstract contract ProxyAIRouter is OwnerIsCreator {
     }
 
     function quoteCrossChainMessage(
-        uint64 targetChain
+        uint64 targetChain,
+        uint256 payFeesIn,
+        bool includeToken,
+        uint256 tokenAmount
     ) public view returns (uint256 cost) {
+        Client.EVMTokenAmount[] memory tokenAmounts;
+        if (includeToken) {
+            tokenAmounts = new Client.EVMTokenAmount[](1);
+            tokenAmounts[0] = Client.EVMTokenAmount({
+                token: address(token),
+                amount: tokenAmount
+            });
+        } else {
+            tokenAmounts = new Client.EVMTokenAmount[](0);
+        }
+
         Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
-            receiver: abi.encode(controller),
+            receiver: abi.encode(includeToken ? controllerVault : controller),
             data: new bytes(0),
-            tokenAmounts: new Client.EVMTokenAmount[](0),
+            tokenAmounts: tokenAmounts,
             extraArgs: Client._argsToBytes(
                 Client.EVMExtraArgsV1({gasLimit: GAS_LIMIT})
             ),
-            feeToken: address(0)
+            feeToken: PayFeesIn(payFeesIn) == PayFeesIn.LINK
+                ? address(linkToken)
+                : address(0)
         });
 
         cost = router.getFee(targetChain, message);
@@ -276,7 +297,7 @@ abstract contract ProxyAIRouter is OwnerIsCreator {
         OperationType operationType
     ) internal pure returns (uint256) {
         if (operationType == OperationType.Low) {
-            return 50 * 1e18; // 50 tokens
+            return 10 * 1e18; // 50 tokens
         } else if (operationType == OperationType.Medium) {
             return 100 * 1e18; // 100 tokens
         } else if (operationType == OperationType.High) {

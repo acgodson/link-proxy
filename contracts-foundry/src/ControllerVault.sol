@@ -20,9 +20,9 @@ contract ControllerVault is CCIPReceiver {
     address public controller;
     mapping(address => mapping(address => uint256)) public routerDeposits;
 
-    event TokensWithdrawn(
-        address indexed router,
-        address indexed token,
+    event PaymentProcessed(
+        bytes32 indexed requestMessageID,
+        address indexed depositorRouter,
         uint256 amount
     );
 
@@ -41,11 +41,14 @@ contract ControllerVault is CCIPReceiver {
 
         (
             address depositorRouter,
+            bytes32 messageId,
             bytes32 idempotencyKey,
             address token,
             uint256 usedTokens
-        ) = abi.decode(message.data, (address, bytes32, address, uint256));
-
+        ) = abi.decode(
+                message.data,
+                (address, bytes32, bytes32, address, uint256)
+            );
         require(
             message.destTokenAmounts.length == 1,
             "Expected 1 token transfer"
@@ -58,7 +61,7 @@ contract ControllerVault is CCIPReceiver {
         require(receivedToken == token, "Token mismatch");
         require(receivedAmount >= usedTokens, "Insufficient tokens received");
 
-        // Call controller to submit receipt
+        // Call controller to controller receipt
         IController(controller).submitReceipt(
             idempotencyKey,
             token,
@@ -66,16 +69,8 @@ contract ControllerVault is CCIPReceiver {
         );
         routerDeposits[depositorRouter][token] += usedTokens;
 
-         IERC20(token).safeTransfer(controller, usedTokens);
+        IERC20(token).safeTransfer(controller, usedTokens);
+
+        emit PaymentProcessed(messageId, depositorRouter, usedTokens);
     }
-
-    // function withdrawTokens(address token, uint256 amount) external {
-    //     uint256 availableAmount = routerDeposits[msg.sender][token];
-    //     require(amount <= availableAmount, "Insufficient balance");
-
-    //     routerDeposits[msg.sender][token] -= amount;
-    //     IERC20(token).safeTransfer(msg.sender, amount);
-
-    //     emit TokensWithdrawn(msg.sender, token, amount);
-    // }
 }

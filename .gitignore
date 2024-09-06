@@ -4,3 +4,5 @@
 
 
 client/.env
+
+contracts-foundry/src/ControllerTemplate.sol

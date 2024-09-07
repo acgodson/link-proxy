@@ -10,7 +10,11 @@ import "./base/ProxyAIRouter.sol";
  */
 contract CustomRouter is ProxyAIRouter {
   // Event to log custom actions
-  event RequestProcessed(bytes32 indexed messageId, PayFeesIn payFeesIn);
+  event RequestProcessed(
+    bytes32 indexed messageId,
+    bytes32 indexed expectedIdempotencyKey,
+    PayFeesIn payFeesIn
+  );
   event ReceiptProcessed(
     bytes32 indexed receiptMessageId,
     bytes32 indexed idempotencyKey,
@@ -34,10 +38,14 @@ contract CustomRouter is ProxyAIRouter {
    * @param messageId The ID of the ccip message sent to the controller.
    * @param payFeesIn The method used to pay for fees (Native or LINK).
    */
-  function _onRequest(bytes32 messageId, PayFeesIn payFeesIn) internal override {
+  function _onRequest(
+    bytes32 messageId,
+    bytes32 expectedIdempotencyKey,
+    PayFeesIn payFeesIn
+  ) internal override {
     // Example of custom logic:
     // 1. Emit an event for external tracking
-    emit RequestProcessed(messageId, payFeesIn);
+    emit RequestProcessed(messageId, expectedIdempotencyKey, payFeesIn);
 
     // 2. Perform additional checks or actions
     // For example, you could update a mapping to track pending requests

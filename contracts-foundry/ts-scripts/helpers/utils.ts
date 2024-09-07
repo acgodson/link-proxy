@@ -83,6 +83,15 @@ export async function getCustomRouter(network: SupportedNetworks) {
   return CustomRouter__factory.connect(deployed, getWallet(network));
 }
 
+export async function getSchemaId(network: SupportedNetworks) {
+  //@ts-ignore
+  const deployed = (await loadDeployedAddresses()).schemas[network];
+  if (!deployed) {
+    throw new Error(`No deployed schema on network ${SupportedNetworks[network]}`);
+  }
+  return deployed;
+}
+
 export const wait = (tx: ethers.ContractTransaction) => tx.wait();
 
 export async function requestTokensFromFaucet(

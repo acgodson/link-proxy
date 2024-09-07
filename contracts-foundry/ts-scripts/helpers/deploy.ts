@@ -1,10 +1,11 @@
 import { SupportedNetworks, getNetworkConfig } from "./config";
-import { getWallet, loadDeployedAddresses, storeDeployedAddresses, wait } from "./utils";
+import { getAccount, getWallet, loadDeployedAddresses, storeDeployedAddresses, wait } from "./utils";
 import {
   Controller__factory,
   ControllerVault__factory,
   CustomRouter__factory,
 } from "../ethers-contracts";
+import { SignProtocolClient, SpMode, EvmChains } from "@ethsign/sp-sdk";
 
 export async function deployController(network: SupportedNetworks) {
   const config = getNetworkConfig(network);
@@ -72,8 +73,32 @@ export async function deployCustomRouter(
   return customRouter;
 }
 
+export async function createAndStoreSchema(network: SupportedNetworks) {
+  const account = getAccount(network);
+  const client = new SignProtocolClient(SpMode.OnChain as any, {
+    account: account,
+    chain: EvmChains.baseSepolia,
+  });
+  const schemaRes = await client.createSchema({
+    name: "Cross-Chain Message Attestation",
+    data: [
+      { name: "messageID", type: "string" },
+      { name: "idempotencyKey", type: "string" },
+      { name: "amount", type: "uint256" },
+    ],
+  });
+  console.log("Schema Created", schemaRes.schemaId);
+  const deployed : any = await loadDeployedAddresses();
+  if (!deployed.schemas) deployed.schemas = {};
+  deployed.schemas[network] = schemaRes.schemaId;
+  await storeDeployedAddresses(deployed);
+  return schemaRes.schemaId;
+}
+
+
 export default {
   deployController,
   deployControllerVault,
   deployCustomRouter,
+  createAndStoreSchema
 };

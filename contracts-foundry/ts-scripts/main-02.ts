@@ -10,8 +10,14 @@ import {
   areRelationshipsVerified,
   setRelationshipsVerified,
   getAccount,
+  getSchemaId,
 } from "./helpers/utils";
-import { deployController, deployControllerVault, deployCustomRouter } from "./helpers/deploy";
+import {
+  createAndStoreSchema,
+  deployController,
+  deployControllerVault,
+  deployCustomRouter,
+} from "./helpers/deploy";
 import {
   Controller,
   ControllerVault,
@@ -24,10 +30,17 @@ async function setupEnvironment(
   sourceNetwork: SupportedNetworks,
   targetNetwork: SupportedNetworks
 ) {
-  let controller: Controller, controllerVault: ControllerVault, customRouter: CustomRouter;
+  let controller: Controller,
+    controllerVault: ControllerVault,
+    customRouter: CustomRouter,
+    schemaId: string;
 
   if (!(await areRelationshipsVerified())) {
     console.log("Relationships not verified. Deploying new contracts...");
+
+    // deploy attestation schema
+    schemaId = await createAndStoreSchema(targetNetwork);
+
     // Deploy contracts
     controller = await deployController(targetNetwork);
     controllerVault = await deployControllerVault(targetNetwork);
@@ -64,19 +77,21 @@ async function setupEnvironment(
     console.log("Setup completed. Relationships verified.");
   } else {
     console.log("Relationships already verified. Skipping deployment.");
+    schemaId = await getSchemaId(targetNetwork);
     controller = await getController(targetNetwork);
     controllerVault = await getControllerVault(targetNetwork);
     customRouter = await getCustomRouter(sourceNetwork);
   }
 
-  return { controller, controllerVault, customRouter };
+  return { controller, controllerVault, customRouter, schemaId };
 }
 
 async function performCrossChainOperation(
   sourceNetwork: SupportedNetworks,
   targetNetwork: SupportedNetworks,
   controller: Controller,
-  customRouter: CustomRouter
+  customRouter: CustomRouter,
+  schemaId: string
 ) {
   // Prepare test data
   const requestHash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("test request"));
@@ -131,17 +146,43 @@ async function performCrossChainOperation(
   );
   const requestMessageId = requestProcessedEvent?.args?.messageId;
   console.log("Request sent, Message ID:", requestMessageId);
+  const expectedIdempotencyKey = requestProcessedEvent?.args?.expectedIdempotencyKey;
+  console.log("Expected Idempotency Key:", expectedIdempotencyKey);
+  
+
+    //TODO: Return expected IdempotencyKey from  the router while waiting for finality
+  // Verify key generation on target chain
+  // console.log("Verifying key generation on target chain...");
+  // const expectedIdempotencyKey = await controller.requestHashToKey(requestHash);
+  // console.log("Generated idempotency key:", expectedIdempotencyKey);
+
+
+  // Generate attestation
+  const account = getAccount(targetNetwork);
+  const client = new SignProtocolClient(SpMode.OnChain as any, {
+    account: account,
+    chain: EvmChains.baseSepolia,
+  });
+  const messageID = requestMessageId;
+
+  await client.createAttestation({
+    schemaId,
+    recipients: [controller.address, account.address],
+    data: {
+      messageID,
+      idempotencyKey: expectedIdempotencyKey,
+      amount: 0,
+    },
+    indexingValue: messageID.toLowerCase(),
+  });
+
+  console.log("Attestation created for key generation");
 
   // Wait for the message to be delivered
   console.log("Waiting for message delivery...");
   await new Promise((resolve) => setTimeout(resolve, 40000));
 
-  //TODO: Return expected IdempotencyKey from  the router while waiting for finality
-
-  // Verify key generation on target chain
-  // console.log("Verifying key generation on target chain...");
-  const expectedIdempotencyKey = await controller.requestHashToKey(requestHash);
-  // console.log("Generated idempotency key:", expectedIdempotencyKey);
+  return;
 
   // Submit receipt
   console.log("Submitting receipt...");
@@ -180,43 +221,23 @@ async function main() {
   const targetNetwork = SupportedNetworks.BASE_SEPOLIA;
 
   try {
-    const { controller, controllerVault, customRouter } = await setupEnvironment(
+    const { controller, controllerVault, customRouter, schemaId } = await setupEnvironment(
       sourceNetwork,
       targetNetwork
     );
-    await performCrossChainOperation(sourceNetwork, targetNetwork, controller, customRouter);
-
-    // sign protocol
-    const account = getAccount(targetNetwork);
-    const client = new SignProtocolClient(SpMode.OnChain as any, {
-      account: account,
-      chain: EvmChains.baseSepolia,
-    });
-
-    const res = await client.createSchema({
-      name: "SDK Test",
-      data: [
-        { name: "messageID", type: "string" },
-        { name: "idempotencyKey", type: "string" },
-        { name: "amount", type: "uint256" },
-      ],
-    });
-    console.log("Schema Created", res.schemaId);
-
-    // Have an offchain monitor that checks if a schema with a messageID has appeared
-
-
-
-    // create an attestation with the SDK with the message
-
-
-
+    await performCrossChainOperation(
+      sourceNetwork,
+      targetNetwork,
+      controller,
+      customRouter,
+      schemaId
+    );
 
     console.log("Test completed successfully");
   } catch (error) {
     console.error("An error occurred during the test:");
     console.error(error);
-    await setRelationshipsVerified(false);
+    // await setRelationshipsVerified(false);
   }
 }
 

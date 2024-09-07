@@ -75,6 +75,7 @@ async function performCrossChainOperation(
   sourceNetwork: SupportedNetworks,
   targetNetwork: SupportedNetworks,
   controller: Controller,
+  controllerVault: ControllerVault,
   customRouter: CustomRouter
 ) {
   // Prepare test data
@@ -83,7 +84,7 @@ async function performCrossChainOperation(
   const operationType = 0; // Low
 
   // Request tokens from faucet
-  const targetAmount = ethers.utils.parseEther("10");
+  const targetAmount = ethers.utils.parseEther("5");
   await requestTokensFromFaucet(sourceNetwork, targetAmount);
 
   // Get token contracts
@@ -99,7 +100,7 @@ async function performCrossChainOperation(
   console.log("LINK Token balance:", ethers.utils.formatEther(linkBalance));
 
   // Approve tokens for the router and deposit to fee tank
-  const amount = ethers.utils.parseEther("10");
+  const amount = ethers.utils.parseEther("5");
   await bnmToken.approve(customRouter.address, amount).then(wait);
   await customRouter.depositToFeeTank(amount).then(wait);
 
@@ -129,7 +130,21 @@ async function performCrossChainOperation(
     (e) => e.event === "RequestProcessed"
   );
   const requestMessageId = requestProcessedEvent?.args?.messageId;
+  const onchainPredictedKey = requestProcessedEvent?.args?.expectedIdempotencyKey;
   console.log("Request sent, Message ID:", requestMessageId);
+  console.log("On-chain Predicted Key:", onchainPredictedKey);
+
+  // Calculate off-chain predicted key
+  const offchainPredictedKey = ethers.utils.keccak256(
+    ethers.utils.defaultAbiCoder.encode(
+      ["address", "bytes32", "uint256"],
+      [customRouter.address, requestHash, fixedNonce]
+    )
+  );
+  console.log("Off-chain Predicted Key:", offchainPredictedKey);
+
+  // Verify key match
+  console.assert(onchainPredictedKey === offchainPredictedKey, "Idempotency Key mismatch");
 
   // Wait for the message to be delivered
   console.log("Waiting for message delivery...");
@@ -140,9 +155,20 @@ async function performCrossChainOperation(
   // Verify key generation on target chain
   // console.log("Verifying key generation on target chain...");
   const expectedIdempotencyKey = await controller.requestHashToKey(requestHash);
-  // console.log("Generated idempotency key:", expectedIdempotencyKey);
+  console.log("Generated idempotency key:", expectedIdempotencyKey);
 
-  // Submit receipt
+  // Check balances before receipt submission
+  const sourceRouterBalanceBefore = await bnmToken.balanceOf(customRouter.address);
+  const targetVaultBalanceBefore = await bnmToken.balanceOf(controllerVault.address);
+  const targetControllerBalanceBefore = await bnmToken.balanceOf(controller.address);
+
+  console.log("Source Router balance before:", ethers.utils.formatEther(sourceRouterBalanceBefore));
+  console.log("Target Vault balance before:", ethers.utils.formatEther(targetVaultBalanceBefore));
+  console.log(
+    "Target Controller balance before:",
+    ethers.utils.formatEther(targetControllerBalanceBefore)
+  );
+
   console.log("Submitting receipt...");
   const usedTokens = ethers.utils.parseEther("2");
   const receiptMessageCost = await customRouter.quoteCrossChainMessage(
@@ -157,7 +183,7 @@ async function performCrossChainOperation(
 
   const submitReceiptTx = await customRouter.submitReceipt(
     requestMessageId,
-    expectedIdempotencyKey,
+    offchainPredictedKey,
     usedTokens,
     1,
     { gasLimit: 500000 }
@@ -168,6 +194,9 @@ async function performCrossChainOperation(
   // Wait for the receipt to be processed
   console.log("Waiting for receipt processing...");
   await new Promise((resolve) => setTimeout(resolve, 30000));
+
+
+
 
   console.log("Cross-chain operation completed successfully");
 }
@@ -183,7 +212,14 @@ async function main() {
       sourceNetwork,
       targetNetwork
     );
-    await performCrossChainOperation(sourceNetwork, targetNetwork, controller, customRouter);
+    await performCrossChainOperation(
+      sourceNetwork,
+      targetNetwork,
+      controller,
+      controllerVault,
+      customRouter
+    );
+
     console.log("Test completed successfully");
   } catch (error) {
     console.error("An error occurred during the test:");

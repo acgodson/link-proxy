@@ -252,11 +252,11 @@ abstract contract ProxyAIRouter is OwnerIsCreator {
 
   function calculateMaxFee(OperationType operationType) internal pure returns (uint256) {
     if (operationType == OperationType.Low) {
-      return 10 * 1e18; // 50 tokens
+      return 5 * 1e18; // 5 tokens
     } else if (operationType == OperationType.Medium) {
-      return 100 * 1e18; // 100 tokens
+      return 10 * 1e18; // 10 tokens
     } else if (operationType == OperationType.High) {
-      return 200 * 1e18; // 200 tokens
+      return 20 * 1e18; // 20 tokens
     }
     return 0;
   }

@@ -36,6 +36,7 @@ contract CustomRouter is ProxyAIRouter {
    * @dev This function is called after a key is generated.
    * Implement custom logic here to define what happens when a key is generated.
    * @param messageId The ID of the ccip message sent to the controller.
+   * @param expectedIdempotencyKey The determinstic idempotencyKey
    * @param payFeesIn The method used to pay for fees (Native or LINK).
    */
   function _onRequest(

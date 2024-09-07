@@ -84,7 +84,7 @@ async function performCrossChainOperation(
   const operationType = 0; // Low
 
   // Request tokens from faucet
-  const targetAmount = ethers.utils.parseEther("5");
+  const targetAmount = ethers.utils.parseEther("10");
   await requestTokensFromFaucet(sourceNetwork, targetAmount);
 
   // Get token contracts
@@ -100,7 +100,7 @@ async function performCrossChainOperation(
   console.log("LINK Token balance:", ethers.utils.formatEther(linkBalance));
 
   // Approve tokens for the router and deposit to fee tank
-  const amount = ethers.utils.parseEther("5");
+  const amount = ethers.utils.parseEther("10");
   await bnmToken.approve(customRouter.address, amount).then(wait);
   await customRouter.depositToFeeTank(amount).then(wait);
 
@@ -129,6 +129,9 @@ async function performCrossChainOperation(
   const requestProcessedEvent = generateKeyReceipt.events?.find(
     (e) => e.event === "RequestProcessed"
   );
+
+  console.log("RequestProcessed event:", requestProcessedEvent);
+
   const requestMessageId = requestProcessedEvent?.args?.messageId;
   const onchainPredictedKey = requestProcessedEvent?.args?.expectedIdempotencyKey;
   console.log("Request sent, Message ID:", requestMessageId);
@@ -136,7 +139,7 @@ async function performCrossChainOperation(
 
   // Calculate off-chain predicted key
   const offchainPredictedKey = ethers.utils.keccak256(
-    ethers.utils.defaultAbiCoder.encode(
+    ethers.utils.solidityPack(
       ["address", "bytes32", "uint256"],
       [customRouter.address, requestHash, fixedNonce]
     )
@@ -194,9 +197,6 @@ async function performCrossChainOperation(
   // Wait for the receipt to be processed
   console.log("Waiting for receipt processing...");
   await new Promise((resolve) => setTimeout(resolve, 30000));
-
-
-
 
   console.log("Cross-chain operation completed successfully");
 }

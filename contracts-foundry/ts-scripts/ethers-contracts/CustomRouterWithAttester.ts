@@ -218,7 +218,7 @@ export interface CustomRouterWithAttesterInterface extends utils.Interface {
     "OwnershipTransferRequested(address,address)": EventFragment;
     "OwnershipTransferred(address,address)": EventFragment;
     "ReceiptProcessed(bytes32,bytes32,uint256)": EventFragment;
-    "RequestProcessed(bytes32,uint8)": EventFragment;
+    "RequestProcessed(bytes32,bytes32,uint8)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "OwnershipTransferRequested"): EventFragment;
@@ -266,10 +266,11 @@ export type ReceiptProcessedEventFilter =
 
 export interface RequestProcessedEventObject {
   messageId: string;
+  expectedIdempotencyKey: string;
   payFeesIn: number;
 }
 export type RequestProcessedEvent = TypedEvent<
-  [string, number],
+  [string, string, number],
   RequestProcessedEventObject
 >;
 
@@ -498,7 +499,7 @@ export interface CustomRouterWithAttester extends BaseContract {
       operationType: BigNumberish,
       payFeesIn: BigNumberish,
       overrides?: CallOverrides
-    ): Promise<string>;
+    ): Promise<[string, string]>;
 
     linkToken(overrides?: CallOverrides): Promise<string>;
 
@@ -586,12 +587,14 @@ export interface CustomRouterWithAttester extends BaseContract {
       usedTokens?: null
     ): ReceiptProcessedEventFilter;
 
-    "RequestProcessed(bytes32,uint8)"(
+    "RequestProcessed(bytes32,bytes32,uint8)"(
       messageId?: BytesLike | null,
+      expectedIdempotencyKey?: null,
       payFeesIn?: null
     ): RequestProcessedEventFilter;
     RequestProcessed(
       messageId?: BytesLike | null,
+      expectedIdempotencyKey?: null,
       payFeesIn?: null
     ): RequestProcessedEventFilter;
   };

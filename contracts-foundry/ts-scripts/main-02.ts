@@ -21,7 +21,8 @@ import {
 import {
   Controller,
   ControllerVault,
-  CustomRouterWithAttester as CustomRouter,
+  CustomRouter,
+  // CustomRouterWithAttester as CustomRouter,
   Mock_Token__factory as ERC20__factory,
 } from "./ethers-contracts";
 import { SignProtocolClient, SpMode, EvmChains } from "@ethsign/sp-sdk";
@@ -90,6 +91,7 @@ async function performCrossChainOperation(
   sourceNetwork: SupportedNetworks,
   targetNetwork: SupportedNetworks,
   controller: Controller,
+  controllerVault: ControllerVault,
   customRouter: CustomRouter,
   schemaId: string
 ) {
@@ -144,18 +146,46 @@ async function performCrossChainOperation(
   const requestProcessedEvent = generateKeyReceipt.events?.find(
     (e) => e.event === "RequestProcessed"
   );
-  const requestMessageId = requestProcessedEvent?.args?.messageId;
-  console.log("Request sent, Message ID:", requestMessageId);
-  const expectedIdempotencyKey = requestProcessedEvent?.args?.expectedIdempotencyKey;
-  console.log("Expected Idempotency Key:", expectedIdempotencyKey);
-  
 
-    //TODO: Return expected IdempotencyKey from  the router while waiting for finality
+  const requestMessageId = requestProcessedEvent?.args?.messageId;
+  const onchainPredictedKey = requestProcessedEvent?.args?.expectedIdempotencyKey;
+  console.log("Request sent, Message ID:", requestMessageId);
+  console.log("On-chain Predicted Key:", onchainPredictedKey);
+
+  // Calculate off-chain predicted key
+  const offchainPredictedKey = ethers.utils.keccak256(
+    ethers.utils.solidityPack(
+      ["address", "bytes32", "uint256"],
+      [customRouter.address, requestHash, fixedNonce]
+    )
+  );
+  console.log("Off-chain Predicted Key:", offchainPredictedKey);
+
+  // Verify key match
+  console.assert(onchainPredictedKey === offchainPredictedKey, "Idempotency Key mismatch");
+
+  // Wait for the message to be delivered
+  console.log("Waiting for message delivery...");
+  await new Promise((resolve) => setTimeout(resolve, 40000));
+
+  //TODO: Return expected IdempotencyKey from  the router while waiting for finality
+
   // Verify key generation on target chain
   // console.log("Verifying key generation on target chain...");
-  // const expectedIdempotencyKey = await controller.requestHashToKey(requestHash);
-  // console.log("Generated idempotency key:", expectedIdempotencyKey);
+  const expectedIdempotencyKey = await controller.requestHashToKey(requestHash);
+  console.log("Generated idempotency key:", expectedIdempotencyKey);
 
+  // Check balances before receipt submission
+  const sourceRouterBalanceBefore = await bnmToken.balanceOf(customRouter.address);
+  const targetVaultBalanceBefore = await bnmToken.balanceOf(controllerVault.address);
+  const targetControllerBalanceBefore = await bnmToken.balanceOf(controller.address);
+
+  console.log("Source Router balance before:", ethers.utils.formatEther(sourceRouterBalanceBefore));
+  console.log("Target Vault balance before:", ethers.utils.formatEther(targetVaultBalanceBefore));
+  console.log(
+    "Target Controller balance before:",
+    ethers.utils.formatEther(targetControllerBalanceBefore)
+  );
 
   // Generate attestation
   const account = getAccount(targetNetwork);
@@ -165,7 +195,7 @@ async function performCrossChainOperation(
   });
   const messageID = requestMessageId;
 
-  await client.createAttestation({
+  const attestationID = await client.createAttestation({
     schemaId,
     recipients: [controller.address, account.address],
     data: {
@@ -176,13 +206,11 @@ async function performCrossChainOperation(
     indexingValue: messageID.toLowerCase(),
   });
 
-  console.log("Attestation created for key generation");
+  console.log("Attestation created for key generation: ", attestationID);
 
   // Wait for the message to be delivered
   console.log("Waiting for message delivery...");
   await new Promise((resolve) => setTimeout(resolve, 40000));
-
-  return;
 
   // Submit receipt
   console.log("Submitting receipt...");
@@ -229,6 +257,7 @@ async function main() {
       sourceNetwork,
       targetNetwork,
       controller,
+      controllerVault,
       customRouter,
       schemaId
     );

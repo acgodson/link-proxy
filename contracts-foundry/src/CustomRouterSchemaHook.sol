@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import "@chainlink/contracts-ccip/src/v0.8/ccip/applications/CCIPReceiver.sol";
-import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@ethsign/sign-protocol-evm/src/interfaces/ISPHook.sol";
 import "./CustomRouter.sol";
 

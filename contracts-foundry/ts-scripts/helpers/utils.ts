@@ -16,6 +16,7 @@ export interface DeployedAddresses {
   customRouter: Record<number, string>;
   erc20s: Record<number, string[]>;
   relationshipsVerified: boolean;
+  schemas: Record<number, string>;
 }
 
 export function getWallet(network: SupportedNetworks): ethers.Wallet {
@@ -47,6 +48,7 @@ export async function loadDeployedAddresses(): Promise<DeployedAddresses> {
       controllerVault: {},
       customRouter: {},
       erc20s: {},
+      schemas: {},
       relationshipsVerified: false,
     };
   }

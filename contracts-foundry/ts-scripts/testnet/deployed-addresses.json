@@ -1,16 +1,16 @@
 {
   "controller": {
-    "5": "0x4A057Ee52c0Ad12b574b904323E6AEFf1C909165"
+    "5": "0x6510ef4e138DedA844FD41b256bAC060914EB733"
   },
   "controllerVault": {
-    "5": "0xE217e620F9D974fF048292b32606Ad362D844772"
+    "5": "0x47D00b73B5033839ee23d49fEE81D6b7E968b13e"
   },
   "customRouter": {
-    "0": "0x50e7C559913BFf13BeFFd1644729Acfe9E04934a"
+    "0": "0x5891a3b8ACa9E948FEa09B9fAE010476dEBD3228"
   },
   "erc20s": {},
   "relationshipsVerified": true,
   "schemas": {
-    "5": "0x213"
+    "0": "0x16e"
   }
 }

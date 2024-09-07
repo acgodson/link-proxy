@@ -34,13 +34,13 @@ async function setupEnvironment(
   let controller: Controller,
     controllerVault: ControllerVault,
     customRouter: CustomRouter,
-    schemaId: string;
+    schemaId: any;
 
   if (!(await areRelationshipsVerified())) {
     console.log("Relationships not verified. Deploying new contracts...");
 
     // deploy attestation schema
-    schemaId = await createAndStoreSchema(targetNetwork);
+    schemaId = await createAndStoreSchema(sourceNetwork);
 
     // Deploy contracts
     controller = await deployController(targetNetwork);
@@ -78,7 +78,7 @@ async function setupEnvironment(
     console.log("Setup completed. Relationships verified.");
   } else {
     console.log("Relationships already verified. Skipping deployment.");
-    schemaId = await getSchemaId(targetNetwork);
+    schemaId = await getSchemaId(sourceNetwork);
     controller = await getController(targetNetwork);
     controllerVault = await getControllerVault(targetNetwork);
     customRouter = await getCustomRouter(sourceNetwork);
@@ -171,9 +171,8 @@ async function performCrossChainOperation(
   //TODO: Return expected IdempotencyKey from  the router while waiting for finality
 
   // Verify key generation on target chain
-  // console.log("Verifying key generation on target chain...");
-  const expectedIdempotencyKey = await controller.requestHashToKey(requestHash);
-  console.log("Generated idempotency key:", expectedIdempotencyKey);
+  // const expectedIdempotencyKey = await controller.requestHashToKey(requestHash);
+  // console.log("Generated idempotency key:", expectedIdempotencyKey);
 
   // Check balances before receipt submission
   const sourceRouterBalanceBefore = await bnmToken.balanceOf(customRouter.address);
@@ -188,10 +187,10 @@ async function performCrossChainOperation(
   );
 
   // Generate attestation
-  const account = getAccount(targetNetwork);
+  const account = getAccount(sourceNetwork);
   const client = new SignProtocolClient(SpMode.OnChain as any, {
     account: account,
-    chain: EvmChains.baseSepolia,
+    chain: EvmChains.sepolia,
   });
   const messageID = requestMessageId;
 
@@ -200,7 +199,7 @@ async function performCrossChainOperation(
     recipients: [controller.address, account.address],
     data: {
       messageID,
-      idempotencyKey: expectedIdempotencyKey,
+      idempotencyKey: onchainPredictedKey,
       amount: 0,
     },
     indexingValue: messageID.toLowerCase(),
@@ -227,7 +226,7 @@ async function performCrossChainOperation(
 
   const submitReceiptTx = await customRouter.submitReceipt(
     requestMessageId,
-    expectedIdempotencyKey,
+    onchainPredictedKey,
     usedTokens,
     1,
     { gasLimit: 500000 }

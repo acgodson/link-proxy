@@ -1,5 +1,11 @@
 import { SupportedNetworks, getNetworkConfig } from "./config";
-import { getAccount, getWallet, loadDeployedAddresses, storeDeployedAddresses, wait } from "./utils";
+import {
+  getAccount,
+  getWallet,
+  loadDeployedAddresses,
+  storeDeployedAddresses,
+  wait,
+} from "./utils";
 import {
   Controller__factory,
   ControllerVault__factory,
@@ -74,31 +80,37 @@ export async function deployCustomRouter(
 }
 
 export async function createAndStoreSchema(network: SupportedNetworks) {
-  const account = getAccount(network);
-  const client = new SignProtocolClient(SpMode.OnChain as any, {
-    account: account,
-    chain: EvmChains.baseSepolia,
-  });
-  const schemaRes = await client.createSchema({
-    name: "Cross-Chain Message Attestation",
-    data: [
-      { name: "messageID", type: "string" },
-      { name: "idempotencyKey", type: "string" },
-      { name: "amount", type: "uint256" },
-    ],
-  });
-  console.log("Schema Created", schemaRes.schemaId);
-  const deployed : any = await loadDeployedAddresses();
-  if (!deployed.schemas) deployed.schemas = {};
-  deployed.schemas[network] = schemaRes.schemaId;
-  await storeDeployedAddresses(deployed);
-  return schemaRes.schemaId;
-}
+  try {
+    const account = getAccount(network);
+    const client = new SignProtocolClient(SpMode.OnChain as any, {
+      account: account,
+      chain: EvmChains.sepolia,
+    });
 
+    // console.log("sign protocol client", client);
+    const schemaRes = await client.createSchema({
+      name: "CCIP Attestation",
+      data: [
+        { name: "messageID", type: "string" },
+        { name: "idempotencyKey", type: "string" },
+        { name: "amount", type: "uint256" },
+      ],
+    });
+    console.log("Schema Created", schemaRes.schemaId);
+    const deployed: any = await loadDeployedAddresses();
+    if (!deployed.schemas) deployed.schemas = {};
+    deployed.schemas[network] = schemaRes.schemaId;
+    await storeDeployedAddresses(deployed);
+    return schemaRes.schemaId;
+  } catch (e) {
+    console.log("error creating attestation", e);
+  }
+  return;
+}
 
 export default {
   deployController,
   deployControllerVault,
   deployCustomRouter,
-  createAndStoreSchema
+  createAndStoreSchema,
 };

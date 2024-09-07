@@ -9,8 +9,12 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ethersproject/abi": "5.7.0",
+    "@ethersproject/providers": "5.7.2",
+    "@ethersproject/wallet": "5.7.0",
     "@radix-ui/react-select": "^2.1.1",
     "@radix-ui/react-slot": "^1.1.0",
+    "axios": "^1.7.7",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "ethers": "5.7.2",
@@ -20,9 +24,7 @@
     "react-dom": "^18",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
-    "@ethersproject/providers": "5.7.2",
-    "@ethersproject/wallet": "5.7.0",
-    "@ethersproject/abi": "5.7.0"
+    "viem": "^2.21.3"
   },
   "devDependencies": {
     "@shadcn/ui": "^0.0.4",

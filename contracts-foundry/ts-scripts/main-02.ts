@@ -150,7 +150,6 @@ async function performCrossChainOperation(
   const requestMessageId = requestProcessedEvent?.args?.messageId;
   const onchainPredictedKey = requestProcessedEvent?.args?.expectedIdempotencyKey;
   console.log("Request sent, Message ID:", requestMessageId);
-  console.log("On-chain Predicted Key:", onchainPredictedKey);
 
   // Calculate off-chain predicted key
   const offchainPredictedKey = ethers.utils.keccak256(
@@ -159,32 +158,17 @@ async function performCrossChainOperation(
       [customRouter.address, requestHash, fixedNonce]
     )
   );
-  console.log("Off-chain Predicted Key:", offchainPredictedKey);
 
-  // Verify key match
+  // Verify generated key matches
   console.assert(onchainPredictedKey === offchainPredictedKey, "Idempotency Key mismatch");
 
   // Wait for the message to be delivered
   console.log("Waiting for message delivery...");
-  await new Promise((resolve) => setTimeout(resolve, 40000));
-
-  //TODO: Return expected IdempotencyKey from  the router while waiting for finality
-
-  // Verify key generation on target chain
-  // const expectedIdempotencyKey = await controller.requestHashToKey(requestHash);
-  // console.log("Generated idempotency key:", expectedIdempotencyKey);
+  await new Promise((resolve) => setTimeout(resolve, 30000));
 
   // Check balances before receipt submission
   const sourceRouterBalanceBefore = await bnmToken.balanceOf(customRouter.address);
-  const targetVaultBalanceBefore = await bnmToken.balanceOf(controllerVault.address);
-  const targetControllerBalanceBefore = await bnmToken.balanceOf(controller.address);
-
   console.log("Source Router balance before:", ethers.utils.formatEther(sourceRouterBalanceBefore));
-  console.log("Target Vault balance before:", ethers.utils.formatEther(targetVaultBalanceBefore));
-  console.log(
-    "Target Controller balance before:",
-    ethers.utils.formatEther(targetControllerBalanceBefore)
-  );
 
   // Generate attestation
   const account = getAccount(sourceNetwork);
@@ -274,3 +258,9 @@ main().catch((error) => {
   console.error(error);
   process.exit(1);
 });
+
+// Attestation created for key generation:  {
+//   attestationId: '0x206',
+//   txHash: '0xea814d249158c9b6f070d7d015a548453822ae23ecc77734b5d751697114347c',
+//   indexingValue: '0xcdea36aeb92afa9e3e447f1dd89d2b8c653f50a7f346d271651f7a8911595cff'
+// }

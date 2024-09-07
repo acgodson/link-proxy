@@ -6,3 +6,4 @@
 client/.env
 
 contracts-foundry/src/ControllerTemplate.sol
+contracts-foundry/.prettierrc

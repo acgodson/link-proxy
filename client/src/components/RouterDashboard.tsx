@@ -14,7 +14,7 @@ const RouterDashboard = () => {
   const [account, setAccount] = useState("");
   const [isConnected, setIsConnected] = useState(false);
 
-  const [currentChainId, setCurrentChainId] = useState("14");
+  const [currentChainId, setCurrentChainId] = useState("0");
   const [routerAddress, setRouterAddress] = useState("");
 
   return (
@@ -27,7 +27,7 @@ const RouterDashboard = () => {
               <SelectValue placeholder="Select Network" />
             </SelectTrigger>
             <SelectContent className="bg-[#2c313c] border-white/20">
-              <SelectItem value="14">Fuji Testnet</SelectItem>
+              <SelectItem value="0">Eth Sepolia</SelectItem>
             </SelectContent>
           </Select>
 

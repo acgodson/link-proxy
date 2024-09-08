@@ -4,7 +4,7 @@ import { useEthContext } from "@/evm/EthContext";
 import {
   CustomRouter__factory,
   Mock_Token__factory as ERC20__factory,
-} from "../../../contracts-foundry/ts-scripts/ethers-contracts";
+} from "@/lib/ccip/ethers-contracts";
 import { useWallets } from "@privy-io/react-auth";
 import {
   getDummyTokensFromNetwork,

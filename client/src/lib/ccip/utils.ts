@@ -10,7 +10,7 @@ import {
   CustomRouter__factory,
   CustomRouterSchemaHook__factory,
   Mock_Token__factory as ERC20__factory,
-} from "../../../../contracts-foundry/ts-scripts/ethers-contracts";
+} from "./ethers-contracts";
 
 export interface DeployedAddresses {
   controller: Record<number, string>;

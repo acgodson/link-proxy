@@ -299,8 +299,8 @@ export interface Mock_TokenInterface extends utils.Interface {
     "MintAccessRevoked(address)": EventFragment;
     "OwnershipTransferRequested(address,address)": EventFragment;
     "OwnershipTransferred(address,address)": EventFragment;
-    "Transfer(address,address,uint256)": EventFragment;
     "Transfer(address,address,uint256,bytes)": EventFragment;
+    "Transfer(address,address,uint256)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "Approval"): EventFragment;
@@ -311,10 +311,10 @@ export interface Mock_TokenInterface extends utils.Interface {
   getEvent(nameOrSignatureOrTopic: "OwnershipTransferRequested"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
   getEvent(
-    nameOrSignatureOrTopic: "Transfer(address,address,uint256)"
+    nameOrSignatureOrTopic: "Transfer(address,address,uint256,bytes)"
   ): EventFragment;
   getEvent(
-    nameOrSignatureOrTopic: "Transfer(address,address,uint256,bytes)"
+    nameOrSignatureOrTopic: "Transfer(address,address,uint256)"
   ): EventFragment;
 }
 
@@ -398,19 +398,6 @@ export type OwnershipTransferredEvent = TypedEvent<
 export type OwnershipTransferredEventFilter =
   TypedEventFilter<OwnershipTransferredEvent>;
 
-export interface Transfer_address_address_uint256_EventObject {
-  from: string;
-  to: string;
-  value: BigNumber;
-}
-export type Transfer_address_address_uint256_Event = TypedEvent<
-  [string, string, BigNumber],
-  Transfer_address_address_uint256_EventObject
->;
-
-export type Transfer_address_address_uint256_EventFilter =
-  TypedEventFilter<Transfer_address_address_uint256_Event>;
-
 export interface Transfer_address_address_uint256_bytes_EventObject {
   from: string;
   to: string;
@@ -424,6 +411,19 @@ export type Transfer_address_address_uint256_bytes_Event = TypedEvent<
 
 export type Transfer_address_address_uint256_bytes_EventFilter =
   TypedEventFilter<Transfer_address_address_uint256_bytes_Event>;
+
+export interface Transfer_address_address_uint256_EventObject {
+  from: string;
+  to: string;
+  value: BigNumber;
+}
+export type Transfer_address_address_uint256_Event = TypedEvent<
+  [string, string, BigNumber],
+  Transfer_address_address_uint256_EventObject
+>;
+
+export type Transfer_address_address_uint256_EventFilter =
+  TypedEventFilter<Transfer_address_address_uint256_Event>;
 
 export interface Mock_Token extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
@@ -920,17 +920,17 @@ export interface Mock_Token extends BaseContract {
       to?: string | null
     ): OwnershipTransferredEventFilter;
 
-    "Transfer(address,address,uint256)"(
-      from?: string | null,
-      to?: string | null,
-      value?: null
-    ): Transfer_address_address_uint256_EventFilter;
     "Transfer(address,address,uint256,bytes)"(
       from?: string | null,
       to?: string | null,
       value?: null,
       data?: null
     ): Transfer_address_address_uint256_bytes_EventFilter;
+    "Transfer(address,address,uint256)"(
+      from?: string | null,
+      to?: string | null,
+      value?: null
+    ): Transfer_address_address_uint256_EventFilter;
   };
 
   estimateGas: {

@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
 import {IRouterClient} from "@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/IRouterClient.sol";
 import {OwnerIsCreator} from "@chainlink/contracts-ccip/src/v0.8/shared/access/OwnerIsCreator.sol";
 import {Client} from "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
+
 import {IERC20} from "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.3/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.3/contracts/token/ERC20/utils/SafeERC20.sol";
 import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
@@ -92,13 +93,15 @@ abstract contract ProxyAIRouter is OwnerIsCreator {
     return _generateKey(requestHash, fixedNonce, operationType, PayFeesIn(payFeesIn));
   }
 
+  //TODO: ALLOW only Sign Hook to call this
   function submitReceipt(
     bytes32 reqeustMessageId,
     bytes32 idempotencyKey,
     uint256 usedTokens,
-    uint256 payFeesIn
+    uint256 payFeesIn,
+    address sender
   ) external payable virtual {
-    _submitReceipt(reqeustMessageId, idempotencyKey, usedTokens, PayFeesIn(payFeesIn));
+    _submitReceipt(reqeustMessageId, idempotencyKey, usedTokens, PayFeesIn(payFeesIn), sender);
   }
 
   function _generateKey(
@@ -107,7 +110,6 @@ abstract contract ProxyAIRouter is OwnerIsCreator {
     uint256 operationType,
     PayFeesIn payFeesIn
   ) internal returns (bytes32 messageId, bytes32 expectedIdempotencyKey) {
-   
     bytes memory payload = abi.encode(
       FunctionType.GenerateKey,
       abi.encode(address(this), requestHash, operationType, fixedNonce)
@@ -155,7 +157,8 @@ abstract contract ProxyAIRouter is OwnerIsCreator {
     bytes32 requestMessageId,
     bytes32 idempotencyKey,
     uint256 usedTokens,
-    PayFeesIn payFeesIn
+    PayFeesIn payFeesIn,
+    address sender
   ) internal {
     uint256 maxFee = messageIdToTokenAmount[requestMessageId];
     require(maxFee > 0, "No tokens held for this messageId");
@@ -163,14 +166,14 @@ abstract contract ProxyAIRouter is OwnerIsCreator {
 
     uint256 refund = maxFee - usedTokens;
     if (refund > 0) {
-      feeTank[msg.sender] += refund;
+      feeTank[sender] += refund;
     }
 
     Client.EVMTokenAmount[] memory tokenAmounts = new Client.EVMTokenAmount[](1);
     tokenAmounts[0] = Client.EVMTokenAmount({token: address(token), amount: usedTokens});
 
     bytes memory payload = abi.encode(
-      address(this), // depositor router address
+      address(this),
       requestMessageId,
       idempotencyKey,
       address(token),
@@ -252,11 +255,11 @@ abstract contract ProxyAIRouter is OwnerIsCreator {
 
   function calculateMaxFee(OperationType operationType) internal pure returns (uint256) {
     if (operationType == OperationType.Low) {
-      return 5 * 1e18; // 5 tokens
+      return 1 * 1e18; // 5 tokens
     } else if (operationType == OperationType.Medium) {
-      return 10 * 1e18; // 10 tokens
+      return 2 * 1e18; // 10 tokens
     } else if (operationType == OperationType.High) {
-      return 20 * 1e18; // 20 tokens
+      return 4 * 1e18; // 20 tokens
     }
     return 0;
   }

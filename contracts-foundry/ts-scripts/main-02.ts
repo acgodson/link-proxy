@@ -11,18 +11,21 @@ import {
   setRelationshipsVerified,
   getAccount,
   getSchemaId,
+  getCustomRouterSchemaHook,
 } from "./helpers/utils";
 import {
   createAndStoreSchema,
   deployController,
   deployControllerVault,
   deployCustomRouter,
+  deployCustomRouterSchemaHook,
 } from "./helpers/deploy";
 import {
   Controller,
   ControllerVault,
   CustomRouter,
-  // CustomRouterWithAttester as CustomRouter,
+  CustomRouterSchemaHook,
+  CustomRouterSchemaHook__factory,
   Mock_Token__factory as ERC20__factory,
 } from "./ethers-contracts";
 import { SignProtocolClient, SpMode, EvmChains } from "@ethsign/sp-sdk";
@@ -34,19 +37,29 @@ async function setupEnvironment(
   let controller: Controller,
     controllerVault: ControllerVault,
     customRouter: CustomRouter,
+    customRouterSchemaHook: CustomRouterSchemaHook,
     schemaId: any;
 
   if (!(await areRelationshipsVerified())) {
     console.log("Relationships not verified. Deploying new contracts...");
-
-    // deploy attestation schema
-    schemaId = await createAndStoreSchema(sourceNetwork);
 
     // Deploy contracts
     controller = await deployController(targetNetwork);
     controllerVault = await deployControllerVault(targetNetwork);
     const { ccipBnM } = getDummyTokensFromNetwork(sourceNetwork);
     customRouter = await deployCustomRouter(sourceNetwork, ccipBnM, targetNetwork);
+
+    // Deploy CustomRouterSchemaHook
+    customRouterSchemaHook = await deployCustomRouterSchemaHook(
+      sourceNetwork,
+      customRouter.address
+    );
+
+    // deploy attestation schema
+    schemaId = await createAndStoreSchema(
+      sourceNetwork,
+      customRouterSchemaHook.address as `0x${string}`
+    );
 
     // Set up relationships
     await controller.setVault(controllerVault.address).then(wait);
@@ -82,9 +95,10 @@ async function setupEnvironment(
     controller = await getController(targetNetwork);
     controllerVault = await getControllerVault(targetNetwork);
     customRouter = await getCustomRouter(sourceNetwork);
+    customRouterSchemaHook = await getCustomRouterSchemaHook(sourceNetwork);
   }
 
-  return { controller, controllerVault, customRouter, schemaId };
+  return { controller, controllerVault, customRouter, customRouterSchemaHook, schemaId };
 }
 
 async function performCrossChainOperation(
@@ -92,6 +106,7 @@ async function performCrossChainOperation(
   targetNetwork: SupportedNetworks,
   controller: Controller,
   controllerVault: ControllerVault,
+  customRouterSchemaHook: CustomRouterSchemaHook,
   customRouter: CustomRouter,
   schemaId: string
 ) {
@@ -101,7 +116,7 @@ async function performCrossChainOperation(
   const operationType = 0; // Low
 
   // Request tokens from faucet
-  const targetAmount = ethers.utils.parseEther("10");
+  const targetAmount = ethers.utils.parseEther("4");
   await requestTokensFromFaucet(sourceNetwork, targetAmount);
 
   // Get token contracts
@@ -117,7 +132,7 @@ async function performCrossChainOperation(
   console.log("LINK Token balance:", ethers.utils.formatEther(linkBalance));
 
   // Approve tokens for the router and deposit to fee tank
-  const amount = ethers.utils.parseEther("10");
+  const amount = ethers.utils.parseEther("2");
   await bnmToken.approve(customRouter.address, amount).then(wait);
   await customRouter.depositToFeeTank(amount).then(wait);
 
@@ -178,26 +193,8 @@ async function performCrossChainOperation(
   });
   const messageID = requestMessageId;
 
-  const attestationID = await client.createAttestation({
-    schemaId,
-    recipients: [controller.address, account.address],
-    data: {
-      messageID,
-      idempotencyKey: onchainPredictedKey,
-      amount: 0,
-    },
-    indexingValue: messageID.toLowerCase(),
-  });
+  const usedTokens = ethers.utils.parseEther("1");
 
-  console.log("Attestation created for key generation: ", attestationID);
-
-  // Wait for the message to be delivered
-  console.log("Waiting for message delivery...");
-  await new Promise((resolve) => setTimeout(resolve, 40000));
-
-  // Submit receipt
-  console.log("Submitting receipt...");
-  const usedTokens = ethers.utils.parseEther("2");
   const receiptMessageCost = await customRouter.quoteCrossChainMessage(
     targetConfig.chainSelector,
     1,
@@ -205,22 +202,38 @@ async function performCrossChainOperation(
     usedTokens
   );
 
-  // send equivalent link to the source Contract
+  // send equivalent link to the source Contract for submitting Receipt
   await linkToken.transfer(customRouter.address, ethers.utils.parseEther("2")).then(wait);
 
-  const submitReceiptTx = await customRouter.submitReceipt(
-    requestMessageId,
-    onchainPredictedKey,
-    usedTokens,
-    1,
-    { gasLimit: 500000 }
+  // create attestation and trigger crosschain receipt submission
+  const attestationID = await client.createAttestation({
+    schemaId,
+    recipients: [controller.address, account.address],
+    data: {
+      messageID,
+      idempotencyKey: onchainPredictedKey,
+      amount: usedTokens,
+    },
+    indexingValue: messageID.toLowerCase(),
+  });
+
+  console.log("Attestation created for key generation: ", attestationID);
+
+  // Check the preSubmission data
+  const preSubmissionData = await customRouterSchemaHook.getPreSubmission(requestMessageId);
+  console.log("PreSubmission data:");
+  console.log("  Request Message ID:", preSubmissionData._requestMessageId);
+  console.log("  Idempotency Key:", preSubmissionData.idempotencyKey);
+  console.log("  Used Tokens:", ethers.utils.formatEther(preSubmissionData.usedTokens));
+  console.log("  Pay Fees In:", preSubmissionData.payFeesIn);
+  console.log("  Sender:", preSubmissionData.sender);
+  console.log(
+    "  Timestamp:",
+    new Date(preSubmissionData.timestamp.toNumber() * 1000).toISOString()
   );
 
-  await submitReceiptTx.wait();
-
-  // Wait for the receipt to be processed
-  console.log("Waiting for receipt processing...");
-  await new Promise((resolve) => setTimeout(resolve, 30000));
+  // Add a delay to allow the blockchain to process the transaction
+  await new Promise((resolve) => setTimeout(resolve, 5000));
 
   console.log("Cross-chain operation completed successfully");
 }
@@ -232,15 +245,14 @@ async function main() {
   const targetNetwork = SupportedNetworks.BASE_SEPOLIA;
 
   try {
-    const { controller, controllerVault, customRouter, schemaId } = await setupEnvironment(
-      sourceNetwork,
-      targetNetwork
-    );
+    const { controller, controllerVault, customRouter, customRouterSchemaHook, schemaId } =
+      await setupEnvironment(sourceNetwork, targetNetwork);
     await performCrossChainOperation(
       sourceNetwork,
       targetNetwork,
       controller,
       controllerVault,
+      customRouterSchemaHook,
       customRouter,
       schemaId
     );

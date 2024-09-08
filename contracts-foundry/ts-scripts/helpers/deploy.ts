@@ -10,6 +10,7 @@ import {
   Controller__factory,
   ControllerVault__factory,
   CustomRouter__factory,
+  CustomRouterSchemaHook__factory,
 } from "../ethers-contracts";
 import { SignProtocolClient, SpMode, EvmChains } from "@ethsign/sp-sdk";
 
@@ -79,7 +80,33 @@ export async function deployCustomRouter(
   return customRouter;
 }
 
-export async function createAndStoreSchema(network: SupportedNetworks) {
+export async function deployCustomRouterSchemaHook(
+  network: SupportedNetworks,
+  customRouterAddress: string
+) {
+  const signer = getWallet(network);
+
+  const customRouterSchemaHook = await new CustomRouterSchemaHook__factory(signer).deploy(
+    customRouterAddress
+  );
+  await customRouterSchemaHook.deployed();
+
+  console.log(
+    `CustomRouterSchemaHook deployed to ${customRouterSchemaHook.address} on network ${SupportedNetworks[network]}`
+  );
+
+  const deployed = await loadDeployedAddresses();
+  deployed.customRouterSchemaHook = deployed.customRouterSchemaHook || {};
+  deployed.customRouterSchemaHook[network] = customRouterSchemaHook.address;
+  await storeDeployedAddresses(deployed);
+
+  return customRouterSchemaHook;
+}
+
+export async function createAndStoreSchema(
+  network: SupportedNetworks,
+  schemaHookAddress: `0x${string}`
+) {
   try {
     const account = getAccount(network);
     const client = new SignProtocolClient(SpMode.OnChain as any, {
@@ -90,9 +117,10 @@ export async function createAndStoreSchema(network: SupportedNetworks) {
     // console.log("sign protocol client", client);
     const schemaRes = await client.createSchema({
       name: "CCIP Attestation",
+      hook: schemaHookAddress,
       data: [
-        { name: "messageID", type: "string" },
-        { name: "idempotencyKey", type: "string" },
+        { name: "messageID", type: "bytes" },
+        { name: "idempotencyKey", type: "bytes" },
         { name: "amount", type: "uint256" },
       ],
     });

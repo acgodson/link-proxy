@@ -84,7 +84,7 @@ async function performCrossChainOperation(
   const operationType = 0; // Low
 
   // Request tokens from faucet
-  const targetAmount = ethers.utils.parseEther("10");
+  const targetAmount = ethers.utils.parseEther("3");
   await requestTokensFromFaucet(sourceNetwork, targetAmount);
 
   // Get token contracts
@@ -100,7 +100,7 @@ async function performCrossChainOperation(
   console.log("LINK Token balance:", ethers.utils.formatEther(linkBalance));
 
   // Approve tokens for the router and deposit to fee tank
-  const amount = ethers.utils.parseEther("10");
+  const amount = ethers.utils.parseEther("2");
   await bnmToken.approve(customRouter.address, amount).then(wait);
   await customRouter.depositToFeeTank(amount).then(wait);
 
@@ -173,7 +173,7 @@ async function performCrossChainOperation(
   );
 
   console.log("Submitting receipt...");
-  const usedTokens = ethers.utils.parseEther("2");
+  const usedTokens = ethers.utils.parseEther("1");
   const receiptMessageCost = await customRouter.quoteCrossChainMessage(
     targetConfig.chainSelector,
     1,
@@ -181,14 +181,16 @@ async function performCrossChainOperation(
     usedTokens
   );
 
-  // send equivalent link to the source Contract
+  // send link to the source Contract for gasFee
   await linkToken.transfer(customRouter.address, ethers.utils.parseEther("2")).then(wait);
 
+  const account = await getWallet(sourceNetwork).getAddress();
   const submitReceiptTx = await customRouter.submitReceipt(
     requestMessageId,
     offchainPredictedKey,
     usedTokens,
     1,
+    account,
     { gasLimit: 500000 }
   );
 

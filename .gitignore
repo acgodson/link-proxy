@@ -7,3 +7,6 @@ client/.env
 
 contracts-foundry/src/ControllerTemplate.sol
 contracts-foundry/.prettierrc
+contracts-foundry/src/.prettierrc.json
+contracts-foundry/src/artifacts
+contracts-foundry/src/.deps

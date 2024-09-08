@@ -74,10 +74,10 @@ contract ProxyAIRouterTest is Test {
     ProxyAIRouter.OperationType operationType = ProxyAIRouter.OperationType.Low;
 
     // Use drip function to get tokens
-    uint256 targetAmount = 15 * 1e18;
+    uint256 targetAmount = 2 * 1e18;
     uint256 amount = 0;
     uint256 loopCount = 0;
-    while (amount < targetAmount && loopCount < 10) {
+    while (amount < targetAmount && loopCount < 3) {
       ccipBnMToken.drip(address(this));
       amount = ccipBnMToken.balanceOf(address(this));
       loopCount++;
@@ -138,7 +138,7 @@ contract ProxyAIRouterTest is Test {
     console.log("Target Controller balance before:", targetControllerBalanceBefore);
 
     // Submit receipt
-    uint256 usedTokens = 2 * 1e18;
+    uint256 usedTokens = 1 * 1e18;
     messageCost = sourceRouter.quoteCrossChainMessage(
       destinationChainSelector,
       uint256(ProxyAIRouter.PayFeesIn.Native),
@@ -150,7 +150,8 @@ contract ProxyAIRouterTest is Test {
       requestMessageId,
       onchainPredictedKey,
       usedTokens,
-      uint256(ProxyAIRouter.PayFeesIn.Native)
+      uint256(ProxyAIRouter.PayFeesIn.Native),
+      address(this)
     );
 
     // Check balances after receipt submission

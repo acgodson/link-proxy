@@ -46,7 +46,7 @@ export interface CustomRouterInterface extends utils.Interface {
     "setController(address)": FunctionFragment;
     "setControllerChainSelector(uint64)": FunctionFragment;
     "setControllerVault(address)": FunctionFragment;
-    "submitReceipt(bytes32,bytes32,uint256,uint256)": FunctionFragment;
+    "submitReceipt(bytes32,bytes32,uint256,uint256,address)": FunctionFragment;
     "token()": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
     "withdrawFromFeeTank(uint256)": FunctionFragment;
@@ -135,7 +135,7 @@ export interface CustomRouterInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "submitReceipt",
-    values: [BytesLike, BytesLike, BigNumberish, BigNumberish]
+    values: [BytesLike, BytesLike, BigNumberish, BigNumberish, string]
   ): string;
   encodeFunctionData(functionFragment: "token", values?: undefined): string;
   encodeFunctionData(
@@ -375,6 +375,7 @@ export interface CustomRouter extends BaseContract {
       idempotencyKey: BytesLike,
       usedTokens: BigNumberish,
       payFeesIn: BigNumberish,
+      sender: string,
       overrides?: PayableOverrides & { from?: string }
     ): Promise<ContractTransaction>;
 
@@ -462,6 +463,7 @@ export interface CustomRouter extends BaseContract {
     idempotencyKey: BytesLike,
     usedTokens: BigNumberish,
     payFeesIn: BigNumberish,
+    sender: string,
     overrides?: PayableOverrides & { from?: string }
   ): Promise<ContractTransaction>;
 
@@ -544,6 +546,7 @@ export interface CustomRouter extends BaseContract {
       idempotencyKey: BytesLike,
       usedTokens: BigNumberish,
       payFeesIn: BigNumberish,
+      sender: string,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -671,6 +674,7 @@ export interface CustomRouter extends BaseContract {
       idempotencyKey: BytesLike,
       usedTokens: BigNumberish,
       payFeesIn: BigNumberish,
+      sender: string,
       overrides?: PayableOverrides & { from?: string }
     ): Promise<BigNumber>;
 
@@ -767,6 +771,7 @@ export interface CustomRouter extends BaseContract {
       idempotencyKey: BytesLike,
       usedTokens: BigNumberish,
       payFeesIn: BigNumberish,
+      sender: string,
       overrides?: PayableOverrides & { from?: string }
     ): Promise<PopulatedTransaction>;
 

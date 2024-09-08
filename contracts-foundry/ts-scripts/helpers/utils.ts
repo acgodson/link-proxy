@@ -5,6 +5,7 @@ import {
   Controller__factory,
   ControllerVault__factory,
   CustomRouter__factory,
+  CustomRouterSchemaHook__factory,
 } from "../ethers-contracts";
 import "dotenv/config";
 import { createWalletClient, http } from "viem";
@@ -15,8 +16,9 @@ export interface DeployedAddresses {
   controllerVault: Record<number, string>;
   customRouter: Record<number, string>;
   erc20s: Record<number, string[]>;
-  relationshipsVerified: boolean;
   schemas: Record<number, string>;
+  customRouterSchemaHook: Record<number, string>;
+  relationshipsVerified: boolean;
 }
 
 export function getWallet(network: SupportedNetworks): ethers.Wallet {
@@ -49,6 +51,7 @@ export async function loadDeployedAddresses(): Promise<DeployedAddresses> {
       customRouter: {},
       erc20s: {},
       schemas: {},
+      customRouterSchemaHook: {},
       relationshipsVerified: false,
     };
   }
@@ -92,6 +95,15 @@ export async function getSchemaId(network: SupportedNetworks) {
     throw new Error(`No deployed schema on network ${SupportedNetworks[network]}`);
   }
   return deployed;
+}
+
+export async function getCustomRouterSchemaHook(network: SupportedNetworks) {
+  const deployed = (await loadDeployedAddresses()).customRouterSchemaHook[network];
+
+  if (!deployed) {
+    throw new Error(`No deployed schema on network ${SupportedNetworks[network]}`);
+  }
+  return CustomRouterSchemaHook__factory.connect(deployed, getWallet(network));
 }
 
 export const wait = (tx: ethers.ContractTransaction) => tx.wait();

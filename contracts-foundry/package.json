@@ -4,7 +4,7 @@
     "build": "npm install; forge build; npm run typechain",
     "test1": "ts-node ./ts-scripts/main-01.ts",
     "test2": "ts-node ./ts-scripts/main-02.ts",
-    "typechain": "typechain --target ethers-v5 --out-dir ts-scripts/ethers-contracts './out/{Controller,ControllerVault,CustomRouter,CustomRouterWithAttester,Mock_Token}.sol/*.json'"
+    "typechain": "typechain --target ethers-v5 --out-dir ts-scripts/ethers-contracts './out/{Controller,ControllerVault,CustomRouter,CustomRouterSchemaHook,Mock_Token}.sol/*.json'"
   },
   "dependencies": {
     "@ethsign/sign-protocol-evm": "^1.1.1",

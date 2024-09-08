@@ -10,3 +10,4 @@ contracts-foundry/.prettierrc
 contracts-foundry/src/.prettierrc.json
 contracts-foundry/src/artifacts
 contracts-foundry/src/.deps
+contracts-foundry/ts-scripts/testnet/example.json

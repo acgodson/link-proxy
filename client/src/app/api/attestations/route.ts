@@ -2,10 +2,10 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
-import { decodeAbiParameters } from "viem";
+import { decodeAbiParameters, fromBytes } from "viem";
 
 const SIGN_PROTOCOL_API = "https://testnet-rpc.sign.global/api";
-const SCHEMA_ID = "onchain_evm_11155111_0x16e";
+const SCHEMA_ID = "onchain_evm_11155111_0x1bf";
 
 const SCHEMA = [
   { name: "messageID", type: "string" },
@@ -81,8 +81,12 @@ async function queryAttestation(messageId: string) {
   return {
     success: true,
     attestation: {
-      id: attestation.id,
+      id: fromBytes(new Uint8Array(Buffer.from(attestation.id)), {
+        size: 32,
+        to: "string",
+      }),
       messageId: parsedData.messageID,
+
       idempotencyKey: parsedData.idempotencyKey,
       amount: parsedData.amount.toString(),
     },
@@ -112,25 +116,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
-// export async function POST(request: NextRequest) {
-//   const body = await request.json();
-//   const messageIds = body.messageIds;
-
-//   if (!Array.isArray(messageIds) || messageIds.length === 0) {
-//     return NextResponse.json({ error: 'messageIds array is required' }, { status: 400 });
-//   }
-
-//   try {
-//     const results = await Promise.all(messageIds.map(queryAttestation));
-//     const processedAttestations = results.filter(result => result.success).map(result => result.attestation);
-
-//     return NextResponse.json({
-//       success: true,
-//       attestations: processedAttestations,
-//     });
-//   } catch (error) {
-//     console.error('Error querying attestations:', error);
-//     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-//   }
-// }

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { usePrivy } from "@privy-io/react-auth";
+// import { usePrivy } from "@privy-io/react-auth";
 import {
   Button,
   Select,
@@ -9,11 +9,13 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/atoms";
+import LinkProxyLogo from "../atoms/logo";
 import { Wallet, Menu, X } from "lucide-react";
 import { useEthContext } from "@/evm/EthContext";
+import { UseLinkProxyReturn } from "@/lib/utils";
 
-const RouterHead = () => {
-  const { authenticated } = usePrivy();
+const RouterHead = ({ LinkProxy }: { LinkProxy: UseLinkProxyReturn }) => {
+  // const { authenticated } = usePrivy();
   const { handleLogin, network, address } = useEthContext();
   const [currentChainId, setCurrentChainId] = useState(network.id);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -30,9 +32,8 @@ const RouterHead = () => {
   return (
     <>
       <div className="flex justify-between items-center mb-12">
-        <h1 className="text-3xl sm:text-4xl text-gray-100 font-light tracking-wide">
-          LP
-        </h1>
+        {/* <h1 className="text-3xl  sm:text-4xl text-orange-300 font-light tracking-wide">LP</h1> */}
+        <LinkProxyLogo />
 
         {/* Desktop view */}
         <div className="hidden sm:flex items-center space-x-4">
@@ -41,7 +42,7 @@ const RouterHead = () => {
               <SelectValue placeholder="Select Network" />
             </SelectTrigger>
             <SelectContent className="bg-[#2c313c] border-white/20">
-              <SelectItem value="0">Eth Sepolia</SelectItem>
+              <SelectItem value={network.id}>Eth Sepolia</SelectItem>
             </SelectContent>
           </Select>
 
@@ -53,9 +54,7 @@ const RouterHead = () => {
             className="bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm rounded-full px-6 py-2 flex items-center transition-all duration-300"
           >
             <Wallet className="mr-2 h-4 w-4" />
-            {address
-              ? `${address?.slice(0, 6)}...${address?.slice(-4)}`
-              : "Connect"}
+            {address ? `${address?.slice(0, 6)}...${address?.slice(-4)}` : "Connect"}
           </Button>
         </div>
 
@@ -82,13 +81,11 @@ const RouterHead = () => {
           </Select>
 
           <Button
-            onClick={!authenticated ? handleLogin : () => {}}
+            onClick={!address ? handleLogin : () => {}}
             className="bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm rounded-full px-6 py-2 flex items-center justify-center transition-all duration-300"
           >
             <Wallet className="mr-2 h-4 w-4" />
-            {authenticated
-              ? `${address?.slice(0, 6)}...${address?.slice(-4)}`
-              : "Connect"}
+            {address ? `${address?.slice(0, 6)}...${address?.slice(-4)}` : "Connect"}
           </Button>
 
           <Button className="bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm rounded-full px-6 py-2 flex items-center justify-center transition-all duration-300">
@@ -96,7 +93,7 @@ const RouterHead = () => {
           </Button>
 
           <Button className="bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm rounded-full px-6 py-2 flex items-center justify-center transition-all duration-300">
-            0.00 ccipBnM
+            {LinkProxy.userBalance} ccipBnM
           </Button>
         </div>
       </div>

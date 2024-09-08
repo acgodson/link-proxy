@@ -17,6 +17,7 @@ import {
 import { ChainId } from "@biconomy/core-types";
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
+import { useLinkProxy } from "@/hooks/useLinkProxy";
 
 interface EthContextType {
   index: number;

@@ -4,25 +4,21 @@ export async function fetchQueryResponse(
   mesageID: string,
   apiKey: string
 ) {
-  // Retrieeve idempotency key from  API
-
   let response = await fetch(`${process.env.HOST}/api/attestations?messageId=${mesageID}`);
 
   let data = await response.json();
   console.log(data);
 
   if (data && data.attestation.idempotencyKey) {
-    console.log("user is authorized", data);
+    console.log("caller may be authorized", data);
   }
   console.log("Retrieved idempotency key:", data.attestation.idempotencyKey);
-  console.log("user Address:", userAddress);
+  console.log("caller's Address:", userAddress);
 
-  // Retrieve idempotency key Data
   const idempotencyKey = data.attestation.idempotencyKey;
 
   if (idempotencyKey) {
     try {
-      //generate new dempotency key with hash of request
       let headersList = {
         "idempotency-key": idempotencyKey,
         Authorization: `Bearer ${apiKey}`,

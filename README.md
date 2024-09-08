@@ -75,7 +75,15 @@ npm run main
 # Test completed successfully
 ```
 
-## How to use test Client Demo
+## How to use test Client
 
 ![router](client/public/shot.png)
+
+1. Connect external wallet and create an AA wallet
+2. Deploy Router
+3. Copy Router address, and send some [Sepolia LInk]() to the router
+4. Mint at least 3 ccipBnM into your AA wallet or use [Faucet]()
+5. Register AA as Admin in the router
+6. Fund fee-tank Router with ccipBnM 
+7. All set! Send a greetings prompt and get a reply from the GPT's Proxy API
 

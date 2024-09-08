@@ -1,6 +1,3 @@
-import { ethers } from "ethers";
-import { Controller } from "./ccip/ethers-contracts";
-
 export async function fetchQueryResponse(
   userAddress: `0x${string}`,
   prompt: any,
@@ -9,7 +6,7 @@ export async function fetchQueryResponse(
 ) {
   // Retrieeve idempotency key from  API
 
-  let response = await fetch(`http://localhost:3000/api/attestations?messageId=${mesageID}`);
+  let response = await fetch(`${process.env.HOST}/api/attestations?messageId=${mesageID}`);
 
   let data = await response.json();
   console.log(data);

@@ -11,6 +11,7 @@ import {
   CustomRouterSchemaHook__factory,
   Mock_Token__factory as ERC20__factory,
 } from "./ethers-contracts";
+import { PaymasterMode } from "@biconomy/account";
 
 export interface DeployedAddresses {
   controller: Record<number, string>;
@@ -26,18 +27,14 @@ export function getWallet(network: SupportedNetworks): ethers.Wallet {
   const config = networkConfigs[network];
   const provider = new ethers.providers.JsonRpcProvider(config.rpc);
   if (!process.env.NEXT_PUBLIC_PRIVATE_KEY) {
-    throw Error(
-      "No private key provided (use the NEXT_PUBLIC_PRIVATE_KEY environment variable)"
-    );
+    throw Error("No private key provided (use the NEXT_PUBLIC_PRIVATE_KEY environment variable)");
   }
   return new ethers.Wallet(process.env.NEXT_PUBLIC_PRIVATE_KEY, provider);
 }
 
 export function getAccount(network: SupportedNetworks) {
   if (!process.env.NEXT_PUBLIC_PRIVATE_KEY) {
-    throw Error(
-      "No private key provided (use the NEXT_PUBLIC_PRIVATE_KEY environment variable)"
-    );
+    throw Error("No private key provided (use the NEXT_PUBLIC_PRIVATE_KEY environment variable)");
   }
   // Note: This function might need adjustment based on how you're handling accounts in the client-side
   return { address: getWallet(network).address };
@@ -73,9 +70,7 @@ export async function storeDeployedAddresses(
 export async function getController(network: SupportedNetworks) {
   const deployed = (await loadDeployedAddresses()).controller[network];
   if (!deployed) {
-    throw new Error(
-      `No deployed controller on network ${SupportedNetworks[network]}`
-    );
+    throw new Error(`No deployed controller on network ${SupportedNetworks[network]}`);
   }
   return Controller__factory.connect(deployed, getWallet(network));
 }
@@ -83,9 +78,7 @@ export async function getController(network: SupportedNetworks) {
 export async function getControllerVault(network: SupportedNetworks) {
   const deployed = (await loadDeployedAddresses()).controllerVault[network];
   if (!deployed) {
-    throw new Error(
-      `No deployed controller vault on network ${SupportedNetworks[network]}`
-    );
+    throw new Error(`No deployed controller vault on network ${SupportedNetworks[network]}`);
   }
   return ControllerVault__factory.connect(deployed, getWallet(network));
 }
@@ -93,9 +86,7 @@ export async function getControllerVault(network: SupportedNetworks) {
 export async function getCustomRouter(network: SupportedNetworks) {
   const deployed = (await loadDeployedAddresses()).customRouter[network];
   if (!deployed) {
-    throw new Error(
-      `No deployed custom router on network ${SupportedNetworks[network]}`
-    );
+    throw new Error(`No deployed custom router on network ${SupportedNetworks[network]}`);
   }
   return CustomRouter__factory.connect(deployed, getWallet(network));
 }
@@ -103,21 +94,15 @@ export async function getCustomRouter(network: SupportedNetworks) {
 export async function getSchemaId(network: SupportedNetworks) {
   const deployed = (await loadDeployedAddresses()).schemas[network];
   if (!deployed) {
-    throw new Error(
-      `No deployed schema on network ${SupportedNetworks[network]}`
-    );
+    throw new Error(`No deployed schema on network ${SupportedNetworks[network]}`);
   }
   return deployed;
 }
 
 export async function getCustomRouterSchemaHook(network: SupportedNetworks) {
-  const deployed = (await loadDeployedAddresses()).customRouterSchemaHook[
-    network
-  ];
+  const deployed = (await loadDeployedAddresses()).customRouterSchemaHook[network];
   if (!deployed) {
-    throw new Error(
-      `No deployed schema hook on network ${SupportedNetworks[network]}`
-    );
+    throw new Error(`No deployed schema hook on network ${SupportedNetworks[network]}`);
   }
   return CustomRouterSchemaHook__factory.connect(deployed, getWallet(network));
 }
@@ -129,9 +114,7 @@ export async function areRelationshipsVerified(): Promise<boolean> {
   return deployed.relationshipsVerified;
 }
 
-export async function setRelationshipsVerified(
-  verified: boolean
-): Promise<void> {
+export async function setRelationshipsVerified(verified: boolean): Promise<void> {
   const deployed = await loadDeployedAddresses();
   deployed.relationshipsVerified = verified;
   await storeDeployedAddresses(deployed);
@@ -144,9 +127,7 @@ export async function requestTokensFromFaucet(
 ) {
   const config = networkConfigs[network];
   if (!config.ccipBnMAddress) {
-    throw new Error(
-      `No faucet address available for network ${SupportedNetworks[network]}`
-    );
+    throw new Error(`No faucet address available for network ${SupportedNetworks[network]}`);
   }
 
   const provider = ethers.providers.getDefaultProvider(config.rpc);
@@ -154,11 +135,7 @@ export async function requestTokensFromFaucet(
     "function drip(address to) external",
     "function balanceOf(address account) external view returns (uint256)",
   ];
-  const faucetContract = new ethers.Contract(
-    config.ccipBnMAddress,
-    faucetABI,
-    provider
-  );
+  const faucetContract = new ethers.Contract(config.ccipBnMAddress, faucetABI, provider);
 
   const userAddress = await smartAccount.getAddress();
   let currentBalance = await faucetContract.balanceOf(userAddress);
@@ -173,11 +150,7 @@ export async function requestTokensFromFaucet(
   }
 
   const dripAmount = ethers.utils.parseEther("4");
-  const numberOfDrips = targetAmount
-    .sub(currentBalance)
-    .div(dripAmount)
-    .add(1)
-    .toNumber();
+  const numberOfDrips = targetAmount.sub(currentBalance).div(dripAmount).add(1).toNumber();
 
   const maxDrips = 5;
 
@@ -196,7 +169,11 @@ export async function requestTokensFromFaucet(
 
   try {
     // Build the UserOperation for the batch of transactions
-    const userOp = await smartAccount.buildUserOp(transactions);
+    const userOp = await smartAccount.buildUserOp(transactions, {
+      paymasterServiceData: {
+        mode: PaymasterMode.SPONSORED,
+      },
+    });
 
     // Send the UserOperation
     const userOpResponse = await smartAccount.sendUserOp(userOp);
@@ -209,9 +186,7 @@ export async function requestTokensFromFaucet(
     // Check final balance
     const finalBalance = await faucetContract.balanceOf(userAddress);
     console.log(
-      `Final balance: ${ethers.utils.formatEther(
-        finalBalance
-      )} after ${dripCount} drips`
+      `Final balance: ${ethers.utils.formatEther(finalBalance)} after ${dripCount} drips`
     );
     return finalBalance;
   } catch (error) {

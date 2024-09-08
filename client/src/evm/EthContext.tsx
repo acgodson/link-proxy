@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useEffect,
+} from "react";
 import { ConnectedWallet, usePrivy, useWallets } from "@privy-io/react-auth";
 import {
   BiconomySmartAccountV2,
@@ -11,6 +17,7 @@ import {
 import { ChainId } from "@biconomy/core-types";
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
+
 
 interface EthContextType {
   index: number;
@@ -28,7 +35,9 @@ interface EthContextType {
 
 const EthContext = createContext<EthContextType | undefined>(undefined);
 
-export const Erc4337Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const Erc4337Provider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const { authenticated, login, logout, connectWallet } = usePrivy();
   const { wallets } = useWallets();
 
@@ -36,7 +45,8 @@ export const Erc4337Provider: React.FC<{ children: ReactNode }> = ({ children })
   const [network, switchNetwork] = useState<any | null>(sepolia);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
 
-  const [smartAccount, setSmartAccount] = useState<BiconomySmartAccountV2 | null>(null);
+  const [smartAccount, setSmartAccount] =
+    useState<BiconomySmartAccountV2 | null>(null);
   const [address, setAddress] = useState<`0x${string}` | null>(null);
 
   const toggleAccountModal = () => setIsAccountModalOpen(!isAccountModalOpen);
@@ -111,7 +121,9 @@ export const Erc4337Provider: React.FC<{ children: ReactNode }> = ({ children })
 
   useEffect(() => {
     if (wallets.length > 0) {
-      const embeddedWallet = wallets.find((wallet) => wallet.walletClientType !== "privy");
+      const embeddedWallet = wallets.find(
+        (wallet) => wallet.walletClientType !== "privy"
+      );
       if (!embeddedWallet) {
         console.log("no embedded wallet wound");
         return;

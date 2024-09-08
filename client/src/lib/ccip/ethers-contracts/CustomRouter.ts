@@ -29,16 +29,14 @@ import type {
 
 export interface CustomRouterInterface extends utils.Interface {
   functions: {
-    "acceptOwnership()": FunctionFragment;
     "controller()": FunctionFragment;
     "controllerChainSelector()": FunctionFragment;
     "controllerVault()": FunctionFragment;
-    "depositToFeeTank(uint256)": FunctionFragment;
+    "depositToFeeTank(address,uint256)": FunctionFragment;
     "feeTank(address)": FunctionFragment;
     "generateKey(bytes32,uint256,uint256,uint256)": FunctionFragment;
     "linkToken()": FunctionFragment;
     "messageIdToTokenAmount(bytes32)": FunctionFragment;
-    "owner()": FunctionFragment;
     "quoteCrossChainMessage(uint64,uint256,bool,uint256)": FunctionFragment;
     "registerAdmin(address)": FunctionFragment;
     "router()": FunctionFragment;
@@ -48,13 +46,11 @@ export interface CustomRouterInterface extends utils.Interface {
     "setControllerVault(address)": FunctionFragment;
     "submitReceipt(bytes32,bytes32,uint256,uint256,address)": FunctionFragment;
     "token()": FunctionFragment;
-    "transferOwnership(address)": FunctionFragment;
     "withdrawFromFeeTank(uint256)": FunctionFragment;
   };
 
   getFunction(
     nameOrSignatureOrTopic:
-      | "acceptOwnership"
       | "controller"
       | "controllerChainSelector"
       | "controllerVault"
@@ -63,7 +59,6 @@ export interface CustomRouterInterface extends utils.Interface {
       | "generateKey"
       | "linkToken"
       | "messageIdToTokenAmount"
-      | "owner"
       | "quoteCrossChainMessage"
       | "registerAdmin"
       | "router"
@@ -73,14 +68,9 @@ export interface CustomRouterInterface extends utils.Interface {
       | "setControllerVault"
       | "submitReceipt"
       | "token"
-      | "transferOwnership"
       | "withdrawFromFeeTank"
   ): FunctionFragment;
 
-  encodeFunctionData(
-    functionFragment: "acceptOwnership",
-    values?: undefined
-  ): string;
   encodeFunctionData(
     functionFragment: "controller",
     values?: undefined
@@ -95,7 +85,7 @@ export interface CustomRouterInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "depositToFeeTank",
-    values: [BigNumberish]
+    values: [string, BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "feeTank", values: [string]): string;
   encodeFunctionData(
@@ -107,7 +97,6 @@ export interface CustomRouterInterface extends utils.Interface {
     functionFragment: "messageIdToTokenAmount",
     values: [BytesLike]
   ): string;
-  encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "quoteCrossChainMessage",
     values: [BigNumberish, BigNumberish, boolean, BigNumberish]
@@ -139,18 +128,10 @@ export interface CustomRouterInterface extends utils.Interface {
   ): string;
   encodeFunctionData(functionFragment: "token", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "transferOwnership",
-    values: [string]
-  ): string;
-  encodeFunctionData(
     functionFragment: "withdrawFromFeeTank",
     values: [BigNumberish]
   ): string;
 
-  decodeFunctionResult(
-    functionFragment: "acceptOwnership",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "controller", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "controllerChainSelector",
@@ -174,7 +155,6 @@ export interface CustomRouterInterface extends utils.Interface {
     functionFragment: "messageIdToTokenAmount",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "quoteCrossChainMessage",
     data: BytesLike
@@ -206,50 +186,18 @@ export interface CustomRouterInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "token", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "transferOwnership",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "withdrawFromFeeTank",
     data: BytesLike
   ): Result;
 
   events: {
-    "OwnershipTransferRequested(address,address)": EventFragment;
-    "OwnershipTransferred(address,address)": EventFragment;
     "ReceiptProcessed(bytes32,bytes32,uint256)": EventFragment;
     "RequestProcessed(bytes32,bytes32,uint8)": EventFragment;
   };
 
-  getEvent(nameOrSignatureOrTopic: "OwnershipTransferRequested"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "ReceiptProcessed"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "RequestProcessed"): EventFragment;
 }
-
-export interface OwnershipTransferRequestedEventObject {
-  from: string;
-  to: string;
-}
-export type OwnershipTransferRequestedEvent = TypedEvent<
-  [string, string],
-  OwnershipTransferRequestedEventObject
->;
-
-export type OwnershipTransferRequestedEventFilter =
-  TypedEventFilter<OwnershipTransferRequestedEvent>;
-
-export interface OwnershipTransferredEventObject {
-  from: string;
-  to: string;
-}
-export type OwnershipTransferredEvent = TypedEvent<
-  [string, string],
-  OwnershipTransferredEventObject
->;
-
-export type OwnershipTransferredEventFilter =
-  TypedEventFilter<OwnershipTransferredEvent>;
 
 export interface ReceiptProcessedEventObject {
   receiptMessageId: string;
@@ -304,10 +252,6 @@ export interface CustomRouter extends BaseContract {
   removeListener: OnEvent<this>;
 
   functions: {
-    acceptOwnership(
-      overrides?: Overrides & { from?: string }
-    ): Promise<ContractTransaction>;
-
     controller(overrides?: CallOverrides): Promise<[string]>;
 
     controllerChainSelector(overrides?: CallOverrides): Promise<[BigNumber]>;
@@ -315,6 +259,7 @@ export interface CustomRouter extends BaseContract {
     controllerVault(overrides?: CallOverrides): Promise<[string]>;
 
     depositToFeeTank(
+      admin: string,
       amount: BigNumberish,
       overrides?: Overrides & { from?: string }
     ): Promise<ContractTransaction>;
@@ -335,8 +280,6 @@ export interface CustomRouter extends BaseContract {
       arg0: BytesLike,
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
-
-    owner(overrides?: CallOverrides): Promise<[string]>;
 
     quoteCrossChainMessage(
       targetChain: BigNumberish,
@@ -381,20 +324,11 @@ export interface CustomRouter extends BaseContract {
 
     token(overrides?: CallOverrides): Promise<[string]>;
 
-    transferOwnership(
-      to: string,
-      overrides?: Overrides & { from?: string }
-    ): Promise<ContractTransaction>;
-
     withdrawFromFeeTank(
       amount: BigNumberish,
       overrides?: Overrides & { from?: string }
     ): Promise<ContractTransaction>;
   };
-
-  acceptOwnership(
-    overrides?: Overrides & { from?: string }
-  ): Promise<ContractTransaction>;
 
   controller(overrides?: CallOverrides): Promise<string>;
 
@@ -403,6 +337,7 @@ export interface CustomRouter extends BaseContract {
   controllerVault(overrides?: CallOverrides): Promise<string>;
 
   depositToFeeTank(
+    admin: string,
     amount: BigNumberish,
     overrides?: Overrides & { from?: string }
   ): Promise<ContractTransaction>;
@@ -423,8 +358,6 @@ export interface CustomRouter extends BaseContract {
     arg0: BytesLike,
     overrides?: CallOverrides
   ): Promise<BigNumber>;
-
-  owner(overrides?: CallOverrides): Promise<string>;
 
   quoteCrossChainMessage(
     targetChain: BigNumberish,
@@ -469,19 +402,12 @@ export interface CustomRouter extends BaseContract {
 
   token(overrides?: CallOverrides): Promise<string>;
 
-  transferOwnership(
-    to: string,
-    overrides?: Overrides & { from?: string }
-  ): Promise<ContractTransaction>;
-
   withdrawFromFeeTank(
     amount: BigNumberish,
     overrides?: Overrides & { from?: string }
   ): Promise<ContractTransaction>;
 
   callStatic: {
-    acceptOwnership(overrides?: CallOverrides): Promise<void>;
-
     controller(overrides?: CallOverrides): Promise<string>;
 
     controllerChainSelector(overrides?: CallOverrides): Promise<BigNumber>;
@@ -489,6 +415,7 @@ export interface CustomRouter extends BaseContract {
     controllerVault(overrides?: CallOverrides): Promise<string>;
 
     depositToFeeTank(
+      admin: string,
       amount: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
@@ -509,8 +436,6 @@ export interface CustomRouter extends BaseContract {
       arg0: BytesLike,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
-
-    owner(overrides?: CallOverrides): Promise<string>;
 
     quoteCrossChainMessage(
       targetChain: BigNumberish,
@@ -552,8 +477,6 @@ export interface CustomRouter extends BaseContract {
 
     token(overrides?: CallOverrides): Promise<string>;
 
-    transferOwnership(to: string, overrides?: CallOverrides): Promise<void>;
-
     withdrawFromFeeTank(
       amount: BigNumberish,
       overrides?: CallOverrides
@@ -561,24 +484,6 @@ export interface CustomRouter extends BaseContract {
   };
 
   filters: {
-    "OwnershipTransferRequested(address,address)"(
-      from?: string | null,
-      to?: string | null
-    ): OwnershipTransferRequestedEventFilter;
-    OwnershipTransferRequested(
-      from?: string | null,
-      to?: string | null
-    ): OwnershipTransferRequestedEventFilter;
-
-    "OwnershipTransferred(address,address)"(
-      from?: string | null,
-      to?: string | null
-    ): OwnershipTransferredEventFilter;
-    OwnershipTransferred(
-      from?: string | null,
-      to?: string | null
-    ): OwnershipTransferredEventFilter;
-
     "ReceiptProcessed(bytes32,bytes32,uint256)"(
       receiptMessageId?: BytesLike | null,
       idempotencyKey?: BytesLike | null,
@@ -603,10 +508,6 @@ export interface CustomRouter extends BaseContract {
   };
 
   estimateGas: {
-    acceptOwnership(
-      overrides?: Overrides & { from?: string }
-    ): Promise<BigNumber>;
-
     controller(overrides?: CallOverrides): Promise<BigNumber>;
 
     controllerChainSelector(overrides?: CallOverrides): Promise<BigNumber>;
@@ -614,6 +515,7 @@ export interface CustomRouter extends BaseContract {
     controllerVault(overrides?: CallOverrides): Promise<BigNumber>;
 
     depositToFeeTank(
+      admin: string,
       amount: BigNumberish,
       overrides?: Overrides & { from?: string }
     ): Promise<BigNumber>;
@@ -634,8 +536,6 @@ export interface CustomRouter extends BaseContract {
       arg0: BytesLike,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
-
-    owner(overrides?: CallOverrides): Promise<BigNumber>;
 
     quoteCrossChainMessage(
       targetChain: BigNumberish,
@@ -680,11 +580,6 @@ export interface CustomRouter extends BaseContract {
 
     token(overrides?: CallOverrides): Promise<BigNumber>;
 
-    transferOwnership(
-      to: string,
-      overrides?: Overrides & { from?: string }
-    ): Promise<BigNumber>;
-
     withdrawFromFeeTank(
       amount: BigNumberish,
       overrides?: Overrides & { from?: string }
@@ -692,10 +587,6 @@ export interface CustomRouter extends BaseContract {
   };
 
   populateTransaction: {
-    acceptOwnership(
-      overrides?: Overrides & { from?: string }
-    ): Promise<PopulatedTransaction>;
-
     controller(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     controllerChainSelector(
@@ -705,6 +596,7 @@ export interface CustomRouter extends BaseContract {
     controllerVault(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     depositToFeeTank(
+      admin: string,
       amount: BigNumberish,
       overrides?: Overrides & { from?: string }
     ): Promise<PopulatedTransaction>;
@@ -728,8 +620,6 @@ export interface CustomRouter extends BaseContract {
       arg0: BytesLike,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
-
-    owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     quoteCrossChainMessage(
       targetChain: BigNumberish,
@@ -776,11 +666,6 @@ export interface CustomRouter extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     token(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    transferOwnership(
-      to: string,
-      overrides?: Overrides & { from?: string }
-    ): Promise<PopulatedTransaction>;
 
     withdrawFromFeeTank(
       amount: BigNumberish,

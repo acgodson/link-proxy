@@ -86,7 +86,7 @@ contract ProxyAIRouterTest is Test {
 
     // Register this contract as an admin and deposit to fee tank
     sourceRouter.registerAdmin(address(this));
-    sourceRouter.depositToFeeTank(amount);
+    sourceRouter.depositToFeeTank(address(this), amount);
 
     // Ensure we have enough balance in the fee tank
     uint256 feeTankBalance = sourceRouter.feeTank(address(this));

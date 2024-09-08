@@ -11,6 +11,7 @@ export interface UseLinkProxyReturn {
   tokenFeeAmount: string;
   tokenAmount: string;
   routerStatus: string;
+  linkTankBalance: string;
   feeTankBalance: string;
   userBalance: string;
   prompt: string;

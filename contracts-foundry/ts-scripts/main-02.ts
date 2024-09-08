@@ -114,6 +114,7 @@ async function performCrossChainOperation(
   const requestHash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("test request"));
   const fixedNonce = 12346;
   const operationType = 0; // Low
+  const account = getAccount(sourceNetwork);
 
   // Request tokens from faucet
   const targetAmount = ethers.utils.parseEther("4");
@@ -134,7 +135,7 @@ async function performCrossChainOperation(
   // Approve tokens for the router and deposit to fee tank
   const amount = ethers.utils.parseEther("2");
   await bnmToken.approve(customRouter.address, amount).then(wait);
-  await customRouter.depositToFeeTank(amount).then(wait);
+  await customRouter.depositToFeeTank(account.address, amount).then(wait);
 
   const targetConfig = getNetworkConfig(targetNetwork);
   const messageCost = await customRouter.quoteCrossChainMessage(
@@ -186,7 +187,6 @@ async function performCrossChainOperation(
   console.log("Source Router balance before:", ethers.utils.formatEther(sourceRouterBalanceBefore));
 
   // Generate attestation
-  const account = getAccount(sourceNetwork);
   const client = new SignProtocolClient(SpMode.OnChain as any, {
     account: account,
     chain: EvmChains.sepolia,

@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button, Input, Card, CardHeader, CardContent, CardTitle } from "@/components/atoms";
-import { Zap, DollarSign, ArrowRight, AlertCircle } from "lucide-react";
+import { Zap, DollarSign, ArrowRight, AlertCircle, Check, Copy } from "lucide-react";
 import { UseLinkProxyReturn } from "@/lib/utils";
 
 const RouterCard = ({
@@ -27,11 +27,14 @@ const RouterCard = ({
 );
 
 export const RouterBody = ({ LinkProxy }: { LinkProxy: UseLinkProxyReturn }) => {
+  const [showCopiedAlert, setShowCopiedAlert] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   const {
     routerStatus,
     routerAddress,
     tokenAmount,
     tokenFeeAmount,
+    linkTankBalance,
     feeTankBalance,
     prompt,
     isMinting,
@@ -50,17 +53,42 @@ export const RouterBody = ({ LinkProxy }: { LinkProxy: UseLinkProxyReturn }) => 
     handleMintTokens,
   } = LinkProxy;
 
+  const copyToClipboard = async () => {
+    if (routerAddress) {
+      try {
+        await navigator.clipboard.writeText(routerAddress);
+        setIsCopied(true);
+        setShowCopiedAlert(true);
+        setTimeout(() => {
+          setShowCopiedAlert(false);
+          setIsCopied(false);
+        }, 3000);
+      } catch (err) {
+        console.error("Failed to copy text: ", err);
+      }
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in">
       <RouterCard title="Deploy Router" icon={Zap}>
         {routerStatus !== "Not Deployed" && (
-          <Input
-            type="text"
-            placeholder="Router Address"
-            value={routerAddress ?? ""}
-            className="mb-4 bg-white/10 border-white/20 focus:border-white/30 rounded-lg transition-all duration-300 focus:ring-2 focus:ring-blue-400/50"
-            disabled={routerStatus !== "Not Deployed"}
-          />
+          <div className="relative mb-4">
+            <Input
+              type="text"
+              placeholder="Router Address"
+              value={routerAddress ?? ""}
+              className="pr-10 bg-white/10 border-white/20 focus:border-white/30 rounded-lg transition-all duration-300 focus:ring-2 focus:ring-blue-400/50"
+              disabled={true}
+            />
+            <button
+              onClick={copyToClipboard}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white/50 hover:text-white/80 transition-colors duration-300"
+              title="Copy router address"
+            >
+              {isCopied ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
+            </button>
+          </div>
         )}
         <Button
           onClick={handleDeploy}
@@ -121,7 +149,7 @@ export const RouterBody = ({ LinkProxy }: { LinkProxy: UseLinkProxyReturn }) => 
         )}
         <Input
           type="number"
-          placeholder="Gas Fee Amount"
+          placeholder="ccipBnM Fee Amount"
           value={tokenFeeAmount}
           onChange={(e) => setTokenFeeAmount(e.target.value)}
           className="mb-4 bg-white/10 border-white/20 focus:border-white/30 rounded-lg transition-all duration-300 focus:ring-2 focus:ring-purple-400/50"
@@ -142,7 +170,10 @@ export const RouterBody = ({ LinkProxy }: { LinkProxy: UseLinkProxyReturn }) => 
           )}
         </Button>
         {routerStatus === "Active" && (
-          <p className="mt-4 text-sm text-green-300">Tank Balance: {feeTankBalance} test USDC</p>
+          <div className="flex flex-row justify-between items-center">
+            <p className="mt-4 text-sm text-green-300">Service: {feeTankBalance} ccipBnM</p>
+            <p className="mt-4 text-sm text-orange-300">Gas: {feeTankBalance} LINK</p>
+          </div>
         )}
       </RouterCard>
 

@@ -45,6 +45,25 @@ npm run main
 
 **Expected output**
 
-```
-output 2
+```bash
+# BnM Token balance: 4.0
+# LINK Token balance: 27.291099348319977224
+# Message cost in LINK: 0.04536595555759099
+# Request sent, Message ID: 0xb7d3f7efb47e2e498397fa49d33711a3595e9bc01fdcc14992a8ccfad79841cb
+# Waiting for message delivery...
+# Source Router balance before: 2.0
+# Attestation created for key generation:  {
+#   attestationId: '0x2bc',
+#   txHash: '0xd09e606997db95ec8e3aa9fd5da7b160d9813f4f9be794919c2ebcaa9f83f681',
+#   indexingValue: '0xb7d3f7efb47e2e498397fa49d33711a3595e9bc01fdcc14992a8ccfad79841cb'
+# }
+# PreSubmission data:
+#   Request Message ID: 0xb7d3f7efb47e2e498397fa49d33711a3595e9bc01fdcc14992a8ccfad79841cb
+#   Idempotency Key: 0x54523eb849e34bb30ec802d31c413bc3dd2be87b5979ccdf545281755d6937ef
+#   Used Tokens: 1.0
+#   Pay Fees In: BigNumber { _hex: '0x01', _isBigNumber: true }
+#   Sender: 0x6945EE254481302AD292Dfc8F7f27c4B065Af96d
+#   Timestamp: 2024-09-08T10:56:36.000Z
+# Cross-chain operation completed successfully
+# Test completed successfully
 ```

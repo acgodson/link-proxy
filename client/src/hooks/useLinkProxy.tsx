@@ -28,11 +28,12 @@ export const useLinkProxy = () => {
   const { address, smartAccount } = useEthContext();
   const { wallets } = useWallets();
 
-  const [routerAddress, setRouterAddress] = useState(null);
-  const [tokenFeeAmount, setTokenFeeAmount] = useState("");
+  const [routerAddress, setRouterAddress] = useState<string | null>(null);
+  const [tokenFeeAmount, setTokenFeeAmount] = useState("0");
   const [tokenAmount, setTokenAmount] = useState("4");
   const [routerStatus, setRouterStatus] = useState("Not Deployed");
   const [feeTankBalance, setFeeTankBalance] = useState("0.00");
+  const [linkTankBalance, setLinkTankBalance] = useState("0.00");
   const [userBalance, setUserBalance] = useState("0.00");
   const [prompt, setPrompt] = useState("");
   const [isDeploying, setIsDeploying] = useState(false);
@@ -68,6 +69,7 @@ export const useLinkProxy = () => {
     const config = getNetworkConfig(sourceNetwork);
     const provider = new ethers.providers.JsonRpcProvider(config.rpc);
     const router = CustomRouter__factory.connect(routerAddress, provider);
+    console.log("the address", address);
     const admin = await router.routerAdmins(address);
     console.log("retrieved admin status", admin);
     if (admin) {
@@ -86,6 +88,13 @@ export const useLinkProxy = () => {
       const admin = await router.routerAdmins(address);
       setRouterStatus(admin ? "Active" : "Not Registered (Not Admin)");
       console.log("admin status", admin);
+      const LinkContract = ERC20__factory.connect(
+        getDummyTokensFromNetwork(sourceNetwork).ccipBnM,
+        provider
+      );
+      const balance = await LinkContract.balanceOf(_address);
+      setLinkTankBalance(ethers.utils.formatEther(balance));
+
       if (admin) {
         const balance = await router.feeTank(address);
         setFeeTankBalance(ethers.utils.formatEther(balance));
@@ -97,60 +106,42 @@ export const useLinkProxy = () => {
   };
 
   const handleDeploy = async () => {
-    if (!address || !smartAccount) {
-      alert("Please connect your wallet first.");
-      return;
-    }
+    console.log("Initiating deployment...");
     setIsDeploying(true);
-    const config = getNetworkConfig(sourceNetwork);
-
-    // const provider = new ethers.providers.JsonRpcProvider(config.rpc);
-    // const signer = smartAccount.getSigner() as unknown as ethers.Signer;
-
-    const targetConfig = getNetworkConfig(targetNetwork);
-    const { ccipBnM } = getDummyTokensFromNetwork(sourceNetwork);
-
-    const factory = new CustomRouter__factory();
-
     try {
-      const deployTx = factory.getDeployTransaction(
-        config.routerAddress,
-        config.linkTokenAddress,
-        controllerAddress,
-        vaultAddress,
-        ccipBnM,
-        targetConfig.chainSelector
-      );
-
-      const tx = {
-        to: ethers.constants.AddressZero,
-        data: deployTx.data ? deployTx.data.toString() : "",
-      };
-
-      const userOp = await smartAccount.buildUserOp([tx], {
-        paymasterServiceData: {
-          mode: PaymasterMode.ERC20,
-          preferredToken: config.linkTokenAddress,
+      const response = await fetch("/api/deploy-router", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          sourceNetwork: sourceNetwork,
+          targetNetwork: targetNetwork,
+        }),
       });
-      const userOpResponse = await smartAccount.sendUserOp(userOp);
 
-      const transactionDetails = await userOpResponse.wait();
-
-      const deployedAddress = transactionDetails.receipt.contractAddress;
-
-      if (deployedAddress) {
-        const deployed = await loadDeployedAddresses();
-        deployed.customRouter[sourceNetwork] = deployedAddress;
-        await storeDeployedAddresses(deployed);
-
-        setRouterAddress(deployedAddress);
-        setRouterStatus("Deployed");
-
-        console.log("Router deployed to:", deployedAddress);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    } catch (error) {
+
+      const data = await response.json();
+
+      if (data.routerAddress) {
+        setRouterAddress(data.routerAddress);
+        setRouterStatus("Deployed");
+        console.log(`Router successfully deployed to: ${data.routerAddress}`);
+        console.log("Router deployed to:", data.routerAddress);
+
+        // Update stored addresses if needed
+        const deployed = await loadDeployedAddresses();
+        deployed.customRouter[sourceNetwork] = data.routerAddress;
+        await storeDeployedAddresses(deployed);
+      } else {
+        throw new Error("Deployment response did not include a router address");
+      }
+    } catch (error: any) {
       console.error("Error deploying router:", error);
+      console.log(`Deployment failed: ${error.message}. Check console for more details.`);
     } finally {
       setIsDeploying(false);
     }
@@ -225,7 +216,7 @@ export const useLinkProxy = () => {
         });
       }
       // Add deposit transaction
-      const depositTx = await customRouter.populateTransaction.depositToFeeTank(amount);
+      const depositTx = await customRouter.populateTransaction.depositToFeeTank(address, amount);
       transactions.push({
         to: routerAddress,
         data: depositTx.data,
@@ -233,7 +224,12 @@ export const useLinkProxy = () => {
 
       // Build and send the UserOperation
       const userOp = await smartAccount.buildUserOp(
-        transactions.map((tx) => ({ ...tx, value: 0 }))
+        transactions.map((tx) => ({ ...tx, value: 0 })),
+        {
+          paymasterServiceData: {
+            mode: PaymasterMode.SPONSORED,
+          },
+        }
       );
 
       const userOpResponse = await smartAccount.sendUserOp(userOp);
@@ -294,7 +290,11 @@ export const useLinkProxy = () => {
       };
 
       // Build the UserOperation
-      const userOp = await smartAccount.buildUserOp([tx]);
+      const userOp = await smartAccount.buildUserOp([tx], {
+        paymasterServiceData: {
+          mode: PaymasterMode.SPONSORED,
+        },
+      });
 
       // Send the UserOperation
       const userOpResponse = await smartAccount.sendUserOp(userOp);
@@ -321,6 +321,19 @@ export const useLinkProxy = () => {
     }
   };
 
+  async function fetchAddresses() {
+    const deployed = await loadDeployedAddresses();
+    const _customRouter = deployed.customRouter[sourceNetwork];
+    if (_customRouter && _customRouter.length > 0) {
+      setRouterAddress(_customRouter);
+      setRouterStatus("Deployed");
+    }
+  }
+
+  useEffect(() => {
+    fetchAddresses();
+  }, []);
+
   useEffect(() => {
     if (address) {
       checkUserTokenBalance();
@@ -338,6 +351,7 @@ export const useLinkProxy = () => {
     tokenFeeAmount,
     tokenAmount,
     routerStatus,
+    linkTankBalance,
     feeTankBalance,
     userBalance,
     prompt,

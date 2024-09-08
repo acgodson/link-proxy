@@ -82,6 +82,7 @@ async function performCrossChainOperation(
   const requestHash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("test request"));
   const fixedNonce = 12346;
   const operationType = 0; // Low
+  const account = getAccount(sourceNetwork);
 
   // Request tokens from faucet
   const targetAmount = ethers.utils.parseEther("3");
@@ -102,7 +103,7 @@ async function performCrossChainOperation(
   // Approve tokens for the router and deposit to fee tank
   const amount = ethers.utils.parseEther("2");
   await bnmToken.approve(customRouter.address, amount).then(wait);
-  await customRouter.depositToFeeTank(amount).then(wait);
+  await customRouter.depositToFeeTank(account.address, amount).then(wait);
 
   const targetConfig = getNetworkConfig(targetNetwork);
   const messageCost = await customRouter.quoteCrossChainMessage(
@@ -184,13 +185,12 @@ async function performCrossChainOperation(
   // send link to the source Contract for gasFee
   await linkToken.transfer(customRouter.address, ethers.utils.parseEther("2")).then(wait);
 
-  const account = await getWallet(sourceNetwork).getAddress();
   const submitReceiptTx = await customRouter.submitReceipt(
     requestMessageId,
     offchainPredictedKey,
     usedTokens,
     1,
-    account,
+    account.address,
     { gasLimit: 500000 }
   );
 

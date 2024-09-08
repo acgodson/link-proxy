@@ -4,10 +4,6 @@ import {
   SupportedNetworks,
 } from "../../../../contracts-foundry/ts-scripts/helpers/config";
 import { encodeFunctionData, getAddress } from "viem";
-import ISPABI from "./ISP.json";
-import { EvmChains, SignProtocolClient, SpMode } from "@ethsign/sp-sdk";
-import { getAccount, getWallet } from "../ccip/utils";
-import { privateKeyToAccount } from "viem/accounts";
 
 export async function createNotaryAttestation(
   network: SupportedNetworks,
@@ -96,10 +92,6 @@ export async function createNotaryAttestation(
     // Wait for the transaction to be mined
     const transactionDetails = await userOpResponse.wait();
     console.log("Attestation created successfully:", transactionDetails);
-
-    // You can find the attestation's ID using the following path:
-    // const attestationId = transactionDetails.logs[0].topics[1];
-    // console.log("Attestation ID:", attestationId);
 
     return transactionDetails;
   } catch (error) {

@@ -11,14 +11,14 @@ export async function fetchQueryResponse(
   let data = await response.json();
   console.log(data);
 
-  if (data && data.idempotencyKey) {
+  if (data && data.attestation.idempotencyKey) {
     console.log("user is authorized", data);
   }
-  console.log("Retrieved idempotency key:", data.idempotencyKey);
+  console.log("Retrieved idempotency key:", data.attestation.idempotencyKey);
   console.log("user Address:", userAddress);
 
   // Retrieve idempotency key Data
-  const idempotencyKey = data.idempotencyKey;
+  const idempotencyKey = data.attestation.idempotencyKey;
 
   if (idempotencyKey) {
     try {

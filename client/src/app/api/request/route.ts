@@ -10,9 +10,6 @@ export async function POST(request: NextRequest) {
     const userAddress = req.user as string;
     const mesageID = req.messageId as string;
 
-    // Use this to retrieve key for the non-cross chain keys
-    // const requestHash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(prompt));
-
     const result: any = await fetchQueryResponse(
       userAddress as `0x${string}`,
       prompt,

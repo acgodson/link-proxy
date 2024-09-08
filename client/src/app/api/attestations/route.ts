@@ -1,18 +1,17 @@
-// File: app/api/attestations/route.ts
-
 import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
-import { decodeAbiParameters, fromBytes } from "viem";
+import { decodeAbiParameters, fromBytes, bytesToHex, bytesToString, toHex } from "viem";
 import { EvmChains, SignProtocolClient, SpMode } from "@ethsign/sp-sdk";
 import { privateKeyToAccount } from "viem/accounts";
 import { ethers } from "ethers";
+import { stringify } from "querystring";
 
 const SIGN_PROTOCOL_API = "https://testnet-rpc.sign.global/api";
 const SCHEMA_ID = "onchain_evm_11155111_0x1f7";
 
 const SCHEMA = [
-  { name: "messageID", type: "string" },
-  { name: "idempotencyKey", type: "string" },
+  { name: "messageID", type: "bytes" },
+  { name: "idempotencyKey", type: "bytes" },
   { name: "amount", type: "uint256" },
 ];
 
@@ -39,6 +38,18 @@ function parseAttestationData(data: `0x${string}`) {
     const parsedData: Record<string, any> = {};
     SCHEMA.forEach((item, index) => {
       parsedData[item.name] = decodedData[index];
+      // if (item.name === "messageId" || item.name === "idempotencyKey") {
+      //   const binaryString = decodedData[index] as any;
+      //   console.log("binary", binaryString);
+
+      //   const buffer = Buffer.from(binaryString, "binary");
+      //   // toHex()
+      //   const hexString = "0x" + buffer.toString("hex");
+      //   const bytes32Hex = hexString.padEnd(66, "0");
+      //   parsedData[item.name] = bytesToHex(buffer, { size: 32 });
+      // } else {
+      //   parsedData[item.name] = decodedData[index];
+      // }
     });
     return parsedData;
   } catch (error) {

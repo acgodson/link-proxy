@@ -23,7 +23,7 @@ export const networkConfigs: { [key in SupportedNetworks]: NetworkConfig } = {
   [SupportedNetworks.ETHEREUM_SEPOLIA]: {
     description: "Ethereum Sepolia Testnet",
     chainSelector: "16015286601757825753",
-    rpc: "https://sepolia.infura.io/v3/2SYhsNBoKVT0rc90QfGmgHe46j4",
+    rpc: "https://eth-sepolia.g.alchemy.com/v2/PB4BbHeft6sndMHQG464LiXM1jl4n29m", //"https://sepolia.infura.io/v3/2SYhsNBoKVT0rc90QfGmgHe46j4",
     routerAddress: "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59",
     linkTokenAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
     wrappedNativeAddress: "0x097D90c9d3E0B50Ca60e1ae45F6A81010f9FB534",

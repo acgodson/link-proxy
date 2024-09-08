@@ -1,10 +1,4 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  ReactNode,
-  useEffect,
-} from "react";
+import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { ConnectedWallet, usePrivy, useWallets } from "@privy-io/react-auth";
 import {
   BiconomySmartAccountV2,
@@ -17,7 +11,6 @@ import {
 import { ChainId } from "@biconomy/core-types";
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
-
 
 interface EthContextType {
   index: number;
@@ -35,9 +28,7 @@ interface EthContextType {
 
 const EthContext = createContext<EthContextType | undefined>(undefined);
 
-export const Erc4337Provider: React.FC<{ children: ReactNode }> = ({
-  children,
-}) => {
+export const Erc4337Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { authenticated, login, logout, connectWallet } = usePrivy();
   const { wallets } = useWallets();
 
@@ -45,8 +36,7 @@ export const Erc4337Provider: React.FC<{ children: ReactNode }> = ({
   const [network, switchNetwork] = useState<any | null>(sepolia);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
 
-  const [smartAccount, setSmartAccount] =
-    useState<BiconomySmartAccountV2 | null>(null);
+  const [smartAccount, setSmartAccount] = useState<BiconomySmartAccountV2 | null>(null);
   const [address, setAddress] = useState<`0x${string}` | null>(null);
 
   const toggleAccountModal = () => setIsAccountModalOpen(!isAccountModalOpen);
@@ -90,6 +80,9 @@ export const Erc4337Provider: React.FC<{ children: ReactNode }> = ({
     const bundler = new Bundler({
       bundlerUrl: `https://bundler.biconomy.io/api/v2/${ChainId.SEPOLIA}/${process.env.NEXT_PUBLIC_BUNDLER_ID}`,
       chainId: ChainId.SEPOLIA,
+      userOpReceiptMaxDurationIntervals: {
+        [ChainId.SEPOLIA]: 180000, // 3 minutes in milliseconds
+      },
     });
 
     const paymaster = new Paymaster({
@@ -103,7 +96,7 @@ export const Erc4337Provider: React.FC<{ children: ReactNode }> = ({
       bundler: bundler,
       bundlerUrl: `https://bundler.biconomy.io/api/v2/${network.id}/${process.env.NEXT_PUBLIC_BUNDLER_ID}`,
       biconomyPaymasterApiKey: process.env.NEXT_PUBLIC_PAYMASTER_KEY,
-      rpcUrl: "https://sepolia.infura.io/v3/2SYhsNBoKVT0rc90QfGmgHe46j4",
+      rpcUrl: "https://eth-sepolia.g.alchemy.com/v2/PB4BbHeft6sndMHQG464LiXM1jl4n29m", //"https://sepolia.infura.io/v3/2SYhsNBoKVT0rc90QfGmgHe46j4",
       paymaster: paymaster,
       paymasterUrl: `https://paymaster.biconomy.io/api/v1/${ChainId.SEPOLIA}/${process.env.NEXT_PUBLIC_PAYMASTER_KEY}`,
     });
@@ -121,9 +114,7 @@ export const Erc4337Provider: React.FC<{ children: ReactNode }> = ({
 
   useEffect(() => {
     if (wallets.length > 0) {
-      const embeddedWallet = wallets.find(
-        (wallet) => wallet.walletClientType !== "privy"
-      );
+      const embeddedWallet = wallets.find((wallet) => wallet.walletClientType !== "privy");
       if (!embeddedWallet) {
         console.log("no embedded wallet wound");
         return;

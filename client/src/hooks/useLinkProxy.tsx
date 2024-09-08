@@ -17,6 +17,8 @@ import {
   storeDeployedAddresses,
 } from "@/lib/ccip/utils";
 import { PaymasterMode } from "@biconomy/account";
+import { SignProtocolClient, SpMode, EvmChains } from "@ethsign/sp-sdk";
+import { callCreateAttestationAPI, createNotaryAttestation } from "@/lib/signProtocol/utils";
 
 const sourceNetwork = SupportedNetworks.ETHEREUM_SEPOLIA;
 const targetNetwork = SupportedNetworks.BASE_SEPOLIA;
@@ -30,11 +32,11 @@ export const useLinkProxy = () => {
 
   const [routerAddress, setRouterAddress] = useState<string | null>(null);
   const [tokenFeeAmount, setTokenFeeAmount] = useState("0");
-  const [tokenAmount, setTokenAmount] = useState("4");
+  const [tokenAmount, setTokenAmount] = useState("2");
   const [routerStatus, setRouterStatus] = useState("Not Deployed");
   const [feeTankBalance, setFeeTankBalance] = useState("0.00");
   const [linkTankBalance, setLinkTankBalance] = useState("0.00");
-  const [userBalance, setUserBalance] = useState("0.00");
+  const [userBalance, setUserBalance] = useState<any | null>(null);
   const [prompt, setPrompt] = useState("");
   const [isDeploying, setIsDeploying] = useState(false);
   const [isMinting, setIsMinting] = useState(false);
@@ -54,10 +56,10 @@ export const useLinkProxy = () => {
     if (!provider) {
       return;
     }
-    const token = ERC20__factory.connect(ccipBnM, provider);
+    const _token = ERC20__factory.connect(ccipBnM, provider);
     try {
-      const amount = await token.balanceOf(address);
-      setUserBalance(ethers.utils.formatEther(amount));
+      const mAmount = await _token.balanceOf(address);
+      setUserBalance(ethers.utils.formatEther(mAmount));
     } catch (error) {
       console.error("Error checking router status:", error);
       setUserBalance("0");
@@ -89,11 +91,11 @@ export const useLinkProxy = () => {
       setRouterStatus(admin ? "Active" : "Not Registered (Not Admin)");
       console.log("admin status", admin);
       const LinkContract = ERC20__factory.connect(
-        getDummyTokensFromNetwork(sourceNetwork).ccipBnM,
+        getNetworkConfig(sourceNetwork).linkTokenAddress,
         provider
       );
-      const balance = await LinkContract.balanceOf(_address);
-      setLinkTankBalance(ethers.utils.formatEther(balance));
+      const lbalance = await LinkContract.balanceOf(_address);
+      setLinkTankBalance(ethers.utils.formatEther(lbalance));
 
       if (admin) {
         const balance = await router.feeTank(address);
@@ -330,15 +332,246 @@ export const useLinkProxy = () => {
     }
   }
 
+  //   const handleSubmitPrompt = async () => {
+  //     if (!routerAddress || !prompt || !smartAccount) return;
+  //     setIsGeneratingKey(true);
+
+  //     try {
+  //       const sourceConfig = getNetworkConfig(sourceNetwork);
+  //       //   const targetConfig = getNetworkConfig(targetNetwork);
+  //       const provider = new ethers.providers.JsonRpcProvider(sourceConfig.rpc);
+  //       const router = CustomRouter__factory.connect(routerAddress, provider);
+
+  //       // Step 1: Generate Key
+  //       const requestHash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(prompt));
+  //       const fixedNonce = Math.floor(Math.random() * 1000000);
+
+  //       const generateKeyTx = await router.populateTransaction.generateKey(
+  //         requestHash,
+  //         fixedNonce,
+  //         0, // Low Operation
+  //         1
+  //       );
+
+  //       const tx = {
+  //         to: routerAddress,
+  //         data: generateKeyTx.data,
+  //         value: 0,
+  //       };
+
+  //       const userOpResponse = await smartAccount.sendTransaction([tx as any], {
+  //         paymasterServiceData: { mode: PaymasterMode.SPONSORED },
+  //       });
+
+  //       const transactionDetails = await userOpResponse.wait();
+
+  //       // Retrieve the actual transaction hash
+  //       const txHash = transactionDetails.receipt.transactionHash;
+
+  //       const fullTxReceipt = await provider.getTransactionReceipt(txHash);
+
+  //       // Parse the logs for the RequestProcessed event
+  //       const iface = new ethers.utils.Interface(CustomRouter__factory.abi);
+  //       const requestProcessedEvent = fullTxReceipt.logs
+  //         .map((log) => {
+  //           try {
+  //             return iface.parseLog(log);
+  //           } catch (e) {
+  //             return null;
+  //           }
+  //         })
+  //         .find((event) => event && event.name === "RequestProcessed");
+
+  //       if (!requestProcessedEvent) {
+  //         throw new Error("RequestProcessed event not found in transaction logs");
+  //       }
+
+  //       setIsGeneratingKey(false);
+  //       setIsProcessing(true);
+
+  //       console.log("Key generated successfully!");
+
+  //       const { messageId: eventMessageId, expectedIdempotencyKey: eventIdempotencyKey } =
+  //         requestProcessedEvent.args;
+
+  //       console.log("Message ID:", eventMessageId);
+  //       console.log("Expected Idempotency Key:", eventIdempotencyKey);
+
+  //       setIsGeneratingKey(false);
+  //       setIsProcessing(true);
+
+  //       console.log("Key generated successfully!");
+
+  //       // Step 2: Create an Attestation
+  //       await new Promise((resolve) => setTimeout(resolve, 1000 * 15));
+
+  //       //   // Step 3: Process the prompt for the messageID
+  //       //   const response = await fetch("/api/request", {
+  //       //     method: "POST",
+  //       //     body: JSON.stringify({ prompt, messageID: eventMessageId, user: address }),
+  //       //     headers: { "Content-Type": "application/json" },
+  //       //   });
+  //       //   const data = await response.json();
+  //       //   console.log("Prompt processed:", data);
+  //     } catch (error: any) {
+  //       console.error("Error in prompt submission process:", error);
+  //       alert(`Error: ${error.message}`);
+  //     } finally {
+  //       setIsGeneratingKey(false);
+  //       setIsProcessing(false);
+  //       setIsSubmittingReceipt(false);
+  //     }
+  //   };
+
+  const handleSubmitPrompt = async () => {
+    if (!routerAddress || !prompt || !smartAccount) return;
+    setIsGeneratingKey(true);
+    console.log("router addr", routerAddress);
+    try {
+      const sourceConfig = getNetworkConfig(sourceNetwork);
+      const provider = new ethers.providers.JsonRpcProvider(sourceConfig.rpc);
+      const router = CustomRouter__factory.connect(routerAddress, provider);
+
+      // Step 1: Generate Key
+      const requestHash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(prompt));
+      const fixedNonce = Math.floor(Math.random() * 1000000);
+
+      console.log("request hash", requestHash);
+      console.log("fixed nounce", fixedNonce);
+
+      //   const generateKeyTx = await router.populateTransaction.generateKey(
+      //     requestHash,
+      //     fixedNonce,
+      //     0, // Low Operation
+      //     1
+      //   );
+      //   const tx = {
+      //     to: routerAddress,
+      //     data: generateKeyTx.data,
+      //     value: 0,
+      //   };
+
+      //   const userOp = await smartAccount.buildUserOp([tx], {
+      //     paymasterServiceData: { mode: PaymasterMode.SPONSORED },
+      //   });
+
+      //   // Send the UserOperation
+      //   const userOpResponse = await smartAccount.sendUserOp(userOp);
+
+      //   console.log(await userOpResponse.waitForTxHash());
+      //   const transactionDetails = await userOpResponse.wait();
+
+      //   // Retrieve the actual transaction hash
+      //   const txHash = transactionDetails.receipt.transactionHash;
+
+      //   console.log("txn hssh", txHash);
+
+      //   const fullTxReceipt = await provider.getTransactionReceipt(txHash);
+
+      //   console.log("All events in transaction logs:");
+
+      //   const eventSignature = "RequestProcessed(bytes32,bytes32,uint8)";
+      //   const eventSignatureHash = ethers.utils.id(eventSignature);
+
+      //   let requestProcessedEvent: any | null = null;
+
+      //   fullTxReceipt.logs.forEach((log, index) => {
+      //     console.log(`Event ${index}:`, {
+      //       address: log.address,
+      //       topics: log.topics,
+      //       data: log.data,
+      //     });
+
+      //     if (
+      //       log.address.toLowerCase() === routerAddress.toLowerCase() &&
+      //       log.topics[0] === eventSignatureHash
+      //     ) {
+      //       try {
+      //         const decodedLog = {
+      //           messageId: log.topics[1],
+      //           expectedIdempotencyKey: log.topics[2],
+      //           payFeesIn: parseInt(log.data, 16),
+      //         };
+      //         console.log(`Decoded RequestProcessed Event:`, decodedLog);
+
+      //         requestProcessedEvent = decodedLog;
+      //       } catch (e) {
+      //         console.log(`Unable to decode RequestProcessed Event`, e);
+      //       }
+      //     }
+      //   });
+
+      //   if (requestProcessedEvent) {
+      // console.log("RequestProcessed event found:", requestProcessedEvent);
+      // console.log("Message ID:", requestProcessedEvent.messageId);
+      // console.log("Expected Idempotency Key:", requestProcessedEvent.expectedIdempotencyKey);
+      // console.log("Pay Fees In:", requestProcessedEvent.payFeesIn);
+
+      // setIsGeneratingKey(false);
+      setIsProcessing(true);
+
+      // Creating attestation
+      // const messageId = requestProcessedEvent.messageId;
+      // const idempotencyKey = requestProcessedEvent.expectedIdempotencyKey;
+      const messageId = "0x171f5ab4ef2da7f7cc91a823d0a5a1de13c65b4108b31d3a2ebb337fa6e8d57b";
+      const idempotencyKey = "0x4567c9e0bbcd81a4b13f6aa515d8d5b622e6a6919a7441dcac0c37d59b82feb4";
+
+      const tokenAllowance = "1";
+
+      //       Message ID: 0x171f5ab4ef2da7f7cc91a823d0a5a1de13c65b4108b31d3a2ebb337fa6e8d57b
+      // VM60929 useLinkProxy.tsx:427 Expected Idempotency Key: 0x4567c9e0bbcd81a4b13f6aa515d8d5b622e6a6919a7441dcac0c37d59b82feb4
+
+      console.log("Key generation process completed!");
+      await new Promise((resolve) => setTimeout(resolve, 1000 * 15));
+
+      // Strep 2: Generating attestation
+      const attestationDetails = await callCreateAttestationAPI(
+        messageId,
+        idempotencyKey,
+        tokenAllowance,
+        routerAddress,
+        address as `0x${string}`
+      );
+
+      console.log("attestation details", attestationDetails);
+
+      // Step 3: Process the prompt with messageID
+      let bodyContent = JSON.stringify({
+        prompt: prompt,
+        messageId: messageId,
+        user: address,
+      });
+
+      let response = await fetch("/api/request", {
+        method: "POST",
+        body: bodyContent,
+        headers: { "Content-Type": "application/json" },
+      });
+
+      let data = await response.json();
+      console.log("prompt processed'", data);
+    } catch (error: any) {
+      console.error("Error in prompt submission process:", error);
+      alert(`Error: ${error.message}`);
+      setIsGeneratingKey(false);
+      setIsProcessing(false);
+      setIsSubmittingReceipt(false);
+    } finally {
+      setIsGeneratingKey(false);
+      setIsProcessing(false);
+      setIsSubmittingReceipt(false);
+    }
+  };
+
   useEffect(() => {
     fetchAddresses();
   }, []);
 
   useEffect(() => {
-    if (address) {
+    if (address && !userBalance) {
       checkUserTokenBalance();
     }
-  }, [address]);
+  }, [address, userBalance]);
 
   useEffect(() => {
     if (address && routerAddress) {
@@ -369,6 +602,16 @@ export const useLinkProxy = () => {
     handleMintTokens,
     handleFundGas,
     handleRegister,
-    // handleSubmitPrompt,
+    handleSubmitPrompt,
   };
 };
+
+//   await createNotaryAttestation(
+//     sourceNetwork,
+//     messageId,
+//     idempotencyKey,
+//     tokenAllowance,
+//     smartAccount,
+//     routerAddress,
+//     [process.env.NEXT_PUBLIC_CONTROLLER_ADDRESS as string, address as string]
+//   );

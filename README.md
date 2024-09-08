@@ -25,8 +25,15 @@ forge test
 
 **Expected output**
 
-```
-output 1
+```bash
+#   Fee tank balance: 2000000000000000000
+#   Source Router balance before: 2000000000000000000
+#   Target Vault balance before: 0
+#   Target Controller balance before: 0
+#   Source Router balance after: 1000000000000000000
+#   Target Vault balance after: 0
+#   Target Controller balance after: 1000000000000000000
+#   test Completed
 ```
 
 ### Deploying to Testnet and Testing
@@ -67,3 +74,8 @@ npm run main
 # Cross-chain operation completed successfully
 # Test completed successfully
 ```
+
+## How to use test Client Demo
+
+![router](client/public/shot.png)
+

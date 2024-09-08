@@ -157,6 +157,7 @@ async function performCrossChainOperation(
     1, // PayFeesIn.Link
     { gasLimit: 300000 }
   );
+
   const generateKeyReceipt = await generateKeyTx.wait();
 
   const requestProcessedEvent = generateKeyReceipt.events?.find(
@@ -222,11 +223,11 @@ async function performCrossChainOperation(
   // Check the preSubmission data
   const preSubmissionData = await customRouterSchemaHook.getPreSubmission(requestMessageId);
   console.log("PreSubmission data:");
-  console.log("  Request Message ID:", preSubmissionData._requestMessageId);
-  console.log("  Idempotency Key:", preSubmissionData.idempotencyKey);
-  console.log("  Used Tokens:", ethers.utils.formatEther(preSubmissionData.usedTokens));
-  console.log("  Pay Fees In:", preSubmissionData.payFeesIn);
-  console.log("  Sender:", preSubmissionData.sender);
+  console.log("Request Message ID:", preSubmissionData._requestMessageId);
+  console.log("Idempotency Key:", preSubmissionData.idempotencyKey);
+  console.log("Used Tokens:", ethers.utils.formatEther(preSubmissionData.usedTokens));
+  console.log("Pay Fees In:", preSubmissionData.payFeesIn);
+  console.log("Sender:", preSubmissionData.sender);
   console.log(
     "  Timestamp:",
     new Date(preSubmissionData.timestamp.toNumber() * 1000).toISOString()

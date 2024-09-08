@@ -29,4 +29,5 @@ export interface UseLinkProxyReturn {
   handleMintTokens: () => Promise<void>;
   handleFundGas: () => Promise<void>;
   handleRegister: () => Promise<void>;
+  handleSubmitPrompt: () => Promise<void>;
 }

@@ -149,10 +149,10 @@ export async function requestTokensFromFaucet(
     return currentBalance;
   }
 
-  const dripAmount = ethers.utils.parseEther("4");
+  const dripAmount = ethers.utils.parseEther("2");
   const numberOfDrips = targetAmount.sub(currentBalance).div(dripAmount).add(1).toNumber();
 
-  const maxDrips = 5;
+  const maxDrips = 2;
 
   const dripCount = Math.min(numberOfDrips, maxDrips);
   console.log(`Preparing ${dripCount} drip transactions...`);

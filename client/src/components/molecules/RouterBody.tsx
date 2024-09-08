@@ -35,6 +35,7 @@ export const RouterBody = ({ LinkProxy }: { LinkProxy: UseLinkProxyReturn }) => 
     tokenAmount,
     tokenFeeAmount,
     linkTankBalance,
+    userBalance,
     feeTankBalance,
     prompt,
     isMinting,
@@ -51,6 +52,7 @@ export const RouterBody = ({ LinkProxy }: { LinkProxy: UseLinkProxyReturn }) => 
     handleRegister,
     setTokenAmount,
     handleMintTokens,
+    handleSubmitPrompt,
   } = LinkProxy;
 
   const copyToClipboard = async () => {
@@ -172,7 +174,7 @@ export const RouterBody = ({ LinkProxy }: { LinkProxy: UseLinkProxyReturn }) => 
         {routerStatus === "Active" && (
           <div className="flex flex-row justify-between items-center">
             <p className="mt-4 text-sm text-green-300">Service: {feeTankBalance} ccipBnM</p>
-            <p className="mt-4 text-sm text-orange-300">Gas: {feeTankBalance} LINK</p>
+            <p className="mt-4 text-sm text-orange-300">Gas: {linkTankBalance} LINK</p>
           </div>
         )}
       </RouterCard>
@@ -201,6 +203,7 @@ export const RouterBody = ({ LinkProxy }: { LinkProxy: UseLinkProxyReturn }) => 
             <Button
               className="w-full bg-gradient-to-r from-white/10 to-white/20 hover:from-white/15 hover:to-white/25 text-white backdrop-blur-sm rounded-lg py-2 flex items-center justify-center transition-all duration-300 group"
               disabled={isGeneratingKey || isProcessing || isSubmittingReceipt}
+              onClick={handleSubmitPrompt}
             >
               {isGeneratingKey ? (
                 <span className="animate-pulse">Generating Key...</span>

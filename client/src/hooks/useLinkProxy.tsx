@@ -506,29 +506,19 @@ export const useLinkProxy = () => {
         console.log("Message ID:", requestProcessedEvent.messageId);
         console.log("Expected Idempotency Key:", requestProcessedEvent.expectedIdempotencyKey);
         console.log("Pay Fees In:", requestProcessedEvent.payFeesIn);
-
+        console.log("Key generation process completed!");
         setIsGeneratingKey(false);
         setIsProcessing(true);
 
         // Creating attestation
         const messageId = requestProcessedEvent.messageId;
         const idempotencyKey = requestProcessedEvent.expectedIdempotencyKey;
-        // const messageId = "0x2eda0d8bbbb514f15864e2f372cafd027dd49d0b84def8d6cd4efc4a346ee8cd";
-        //   const idempotencyKey = "0x4567c9e0bbcd81a4b13f6aa515d8d5b622e6a6919a7441dcac0c37d59b82feb4";
 
-        const tokenAllowance = "1";
-
-        //       Message ID: 0x171f5ab4ef2da7f7cc91a823d0a5a1de13c65b4108b31d3a2ebb337fa6e8d57b
-        //   VM60929 useLinkProxy.tsx:427 Expected Idempotency Key: 0x4567c9e0bbcd81a4b13f6aa515d8d5b622e6a6919a7441dcac0c37d59b82feb4
-        //
-        console.log("Key generation process completed!");
-        //   await new Promise((resolve) => setTimeout(resolve, 1000 * 15));
-
-        // Strep 2: Generating attestation
+        const fixedTokenAmount = "1";
         const attestationDetails = await callCreateAttestationAPI(
           messageId,
           idempotencyKey,
-          tokenAllowance,
+          fixedTokenAmount,
           routerAddress,
           address as `0x${string}`
         );
@@ -550,6 +540,7 @@ export const useLinkProxy = () => {
 
         let data = await response.json();
         console.log("prompt processed'", data);
+        window.prompt(data.result);
       }
     } catch (error: any) {
       console.error("Error in prompt submission process:", error);
@@ -606,13 +597,3 @@ export const useLinkProxy = () => {
     handleSubmitPrompt,
   };
 };
-
-//   await createNotaryAttestation(
-//     sourceNetwork,
-//     messageId,
-//     idempotencyKey,
-//     tokenAllowance,
-//     smartAccount,
-//     routerAddress,
-//     [process.env.NEXT_PUBLIC_CONTROLLER_ADDRESS as string, address as string]
-//   );

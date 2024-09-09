@@ -140,14 +140,14 @@ export async function requestTokensFromFaucet(
   const userAddress = await smartAccount.getAddress();
   let currentBalance = await faucetContract.balanceOf(userAddress);
 
-  if (currentBalance.gte(targetAmount)) {
-    console.log(
-      `Current balance (${ethers.utils.formatEther(
-        currentBalance
-      )}) already meets or exceeds target amount.`
-    );
-    return currentBalance;
-  }
+  // if (currentBalance.gte(targetAmount)) {
+  //   console.log(
+  //     `Current balance (${ethers.utils.formatEther(
+  //       currentBalance
+  //     )}) already meets or exceeds target amount.`
+  //   );
+  //   return currentBalance;
+  // }
 
   const dripAmount = ethers.utils.parseEther("2");
   const numberOfDrips = targetAmount.sub(currentBalance).div(dripAmount).add(1).toNumber();
